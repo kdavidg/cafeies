@@ -574,6 +574,17 @@ input { font-family: var(--font-sans); outline: none; }
   color: white;
 }
 
+.time-chip.selected {
+  background-color: var(--orange); /* Usa tu color naranja definido */
+  color: white; /* Cambia el color del texto a blanco */
+  border-color: var(--orange); /* El borde también del color naranja */
+  cursor: default; /* Ya no parece clicable */
+}
+
+.time-chip.selected .time-label {
+  color: rgba(255, 255, 255, 0.8);
+}
+
 .time-value {
   font-size: 14px;
   font-weight: 700;

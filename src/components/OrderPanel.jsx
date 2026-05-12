@@ -28,8 +28,8 @@ function OrderPanel({ orderItems, PRODUCTS, orderTotal, orderCount, setCurrentVi
             }}>
               {/* Info del nombre y precio total del producto */}
               <div style={{ display: 'flex', flexDirection: 'column' }}>
-                <span style={{ fontWeight: '600', fontSize: '14px', marginBottom: '4px' }}>{product?.name}</span>
-                <span style={{ fontWeight: 'bold', color: 'var(--orange)' }}>{(product?.price * qty).toFixed(2)}€</span>
+                <span style={{ fontWeight: '600', fontSize: '14px', marginBottom: '4px' }}>{product?.nombre}</span>
+                <span style={{ fontWeight: 'bold', color: 'var(--orange)' }}>{(product?.precio * qty).toFixed(2)}€</span>
               </div>
 
               {/* CONTROLES +/- (ESTILO IMAGEN) */}

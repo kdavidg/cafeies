@@ -22,11 +22,13 @@ export default function CaféIES() {
   const [products, setProducts] = useState([]); 
   const [loading, setLoading] = useState(true);
   const [pedidos, setPedidos] = useState([]);
+  const franjasDisponibles = ["09:00 - 10:00", "10:00 - 11:00", "11:00 - 12:00", "12:00 - 13:00"];
+  const [franjaElegida, setFranjaElegida] = useState('10:45');
 
  useEffect(() => {
   const fetchProducts = async () => {
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/productos/');
+      const response = await fetch('https://backend-production-2b15.up.railway.app/api/productos/');
       const data = await response.json();
 
       console.log(data);
@@ -62,7 +64,7 @@ useEffect(() => {
 
 const fetchPedidos = async () => {
     try {
-        const response = await fetch('http://127.0.0.1:8000/api/pedidos/lista/');
+        const response = await fetch('https://backend-production-2b15.up.railway.app/api/pedidos/lista/');
         const data = await response.json();
         setPedidos(data);
     } catch (error) {
@@ -111,27 +113,23 @@ useEffect(() => {
 };
 
   const finalizarPedido = async () => {
-  // 1. Preparamos el objeto exactamente como lo espera Django
   const pedidoParaEnviar = {
     usuario: user?.email || "usuario_anonimo@cafeies.com",
     items: orderItems,
     total: orderTotal,
+    franja_horaria: franjaElegida,
     fecha: new Date().toISOString(),
     nota: document.getElementById('order-note-input')?.value || ""
   };
 
-  console.log("Enviando pedido a Django:", pedidoParaEnviar);
-
   try {
-    // IMPORTANTE: Revisa que esta URL sea la misma que en tu urls.py
-    // Si en urls.py pusiste 'api/pedidos/crear/', asegúrate de que termine en /
-    const response = await fetch('http://127.0.0.1:8000/api/pedidos/crear/', {
+    // CAMBIA ESTA URL por la que te dio Railway para el backend
+    const response = await fetch('https://backend-production-2b15.up.railway.app/api/pedidos/crear/', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(pedidoParaEnviar),
     });
+    // ... resto del código
 
     if (response.ok) {
       const result = await response.json();
@@ -141,7 +139,7 @@ useEffect(() => {
       
       // Limpiar y navegar
       setOrderItems({});
-      if (typeof fetchPedidos === 'function') fetchPedidos(); // Recarga el historial
+      if (typeof fetchPedidos === 'function') fetchPedidos();
       setCurrentView('history');
     } else {
       const errorText = await response.text();
@@ -212,16 +210,23 @@ useEffect(() => {
               </div>
               
               <div className="time-slots-wrapper">
-                <span className="slots-label">Selecciona hora de recogida:</span>
+                <span className="slots-label">SELECCIONA HORA DE RECOGIDA:</span>
                 <div className="time-slots-container">
                   {TIME_SLOTS.map(slot => (
-                    <button key={slot.time} className="time-chip">
+                    <button 
+                      key={slot.time} 
+                      // Si la hora del botón coincide con el estado, le ponemos la clase 'active' o 'selected'
+                      className={`time-chip ${franjaElegida === slot.time ? 'active' : ''}`}
+                      // IMPORTANTE: Al hacer clic, actualizamos el estado
+                      onClick={() => setFranjaElegida(slot.time)}
+                      style={franjaElegida === slot.time ? {backgroundColor: 'var(--orange)', color: 'white'} : {}}
+                    >
                       <span className="time-value">{slot.time}</span>
                       <span className="time-label">{slot.label}</span>
-                      </button>
-                    ))}
-                  </div>
+                    </button>
+                  ))}
                 </div>
+              </div>
               </div>
               
                 <div className="category-tabs">
