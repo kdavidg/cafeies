@@ -10,6 +10,13 @@ import LoginForm from './components/Login.jsx';
 import { TIME_SLOTS } from './data/timeSlots.js';
 import { USER } from './data/user.js';
 
+import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
+import { jwtDecode } from 'jwt-decode';
+
+<GoogleOAuthProvider clientId="389069267633-j5n6e0r6p4ec99be2v3hfjderhe54vgh.apps.googleusercontent.com">
+    <CaféIES />
+</GoogleOAuthProvider>
+
 
 export default function CaféIES() {
   const [currentView, setCurrentView] = useState('login');
@@ -25,15 +32,14 @@ export default function CaféIES() {
   const franjasDisponibles = ["09:00 - 10:00", "10:00 - 11:00", "11:00 - 12:00", "12:00 - 13:00"];
   const [franjaElegida, setFranjaElegida] = useState('10:45');
   const [metodoPago, setMetodoPago] = useState('monedero');
+  
 
  useEffect(() => {
-  const fetchProducts = async () => {
+  const fetchProducts = async () => { // La función async se define AQUÍ dentro
     try {
       const response = await fetch('https://backend-production-2b15.up.railway.app/api/productos/');
       const data = await response.json();
-
-      console.log(data);
-
+      
       const formattedProducts = data.map(product => ({
         id: product.id,
         name: product.nombre,
@@ -41,13 +47,11 @@ export default function CaféIES() {
         price: parseFloat(product.precio),
         cat: product.categoria || "bebidas",
         emoji: product.emoji || "☕",
-        badges: product.badges || []
+        badges: []
       }));
-
       setProducts(formattedProducts);
-
     } catch (error) {
-      console.error("Error cargando productos de Django:", error);
+      console.error("Error cargando productos:", error);
     } finally {
       setLoading(false);
     }
@@ -55,6 +59,7 @@ export default function CaféIES() {
 
   fetchProducts();
 }, []);
+
 
 useEffect(() => {
   if (currentView === 'history' || currentView === 'menu') {
@@ -92,10 +97,10 @@ useEffect(() => {
   };
 
   const handleLogout = () => {
-    setIsLoggedIn(false);
-    setCurrentView('login');
-  };
-
+  setIsLoggedIn(false);
+  setUser(null);
+  setCurrentView('login');
+};
   const toggleFav = (id) => {
     const newFavs = new Set(favorites);
     newFavs.has(id) ? newFavs.delete(id) : newFavs.add(id);
@@ -201,14 +206,78 @@ const finalizarPedidoGestion = async (pedidoId, accion) => {
 
   // --- RENDER ---
   return (
+    <GoogleOAuthProvider clientId="389069267633-j5n6e0r6p4ec99be2v3hfjderhe54vgh.apps.googleusercontent.com">
     <div className="app-container">
       {!isLoggedIn ? (
-        <div className="login-screen">
-          <div className="login-card">
-            <div className="login-logo-mark">café</div>
-            <h1 className="login-headline">Bienvenido a Café<em>IES</em></h1>
-            <p className="login-sub">Pide sin hacer cola</p>
-            <LoginForm onLogin={handleLogin} onGoogleLogin={handleGoogleLogin} />
+        /* --- PANTALLA DE LOGIN OSCURA --- */
+        <div className="login-screen" style={{ 
+          background: 'radial-gradient(circle at center, #2c1a10 0%, #000000 100%)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh',
+          margin: 0
+        }}>
+          <div className="login-card" style={{ 
+            background: 'rgba(255, 255, 255, 0.03)', 
+            backdropFilter: 'blur(15px)',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            padding: '50px 40px',
+            borderRadius: '28px',
+            textAlign: 'center',
+            width: '100%',
+            maxWidth: '420px',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+          }}>
+            {/* Tu logo cuadrado naranja */}
+            <div style={{ 
+              background: '#ff5c1a', 
+              width: '64px', 
+              height: '64px', 
+              borderRadius: '16px', 
+              margin: '0 auto 24px',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              fontSize: '18px',
+              fontWeight: 'bold',
+              color: 'white',
+              boxShadow: '0 8px 20px rgba(255, 92, 26, 0.3)'
+            }}>café</div>
+
+            <h1 style={{ color: 'white', fontSize: '32px', marginBottom: '8px', fontWeight: '800', letterSpacing: '-0.5px' }}>
+              Bienvenido a <span style={{ color: '#ff5c1a' }}>CaféIES</span>
+            </h1>
+            <p style={{ color: 'rgba(255,255,255,0.5)', marginBottom: '35px', fontSize: '15px' }}>Pide sin hacer cola</p>
+            
+            {/* CONTENEDOR DEL BOTÓN BLANCO */}
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'center',
+              width: '100%' 
+            }}>
+              <GoogleLogin
+            onSuccess={credentialResponse => {
+              // Decodificamos el token para obtener tus datos reales
+              const decoded = jwtDecode(credentialResponse.credential);
+              console.log("Datos de Google:", decoded);
+
+              // Guardamos los datos reales en el estado
+              setUser({ 
+                name: decoded.given_name,
+                email: decoded.email,
+    });
+    
+    setIsLoggedIn(true);
+    setCurrentView('menu');
+  }}
+  onError={() => console.log('Login Fallido')}
+  theme="outline"
+  size="large"
+  shape="pill"
+  locale="es"
+/>
+            </div>
           </div>
         </div>
       ) : (
@@ -688,5 +757,6 @@ const finalizarPedidoGestion = async (pedidoId, accion) => {
         </>
       )}
     </div>
+    </GoogleOAuthProvider>
   );
 }
