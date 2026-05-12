@@ -12,6 +12,12 @@ class Pedido(models.Model):
     fecha = models.DateTimeField(auto_now_add=True)
     franja_horaria = models.CharField(max_length=50) 
     items = models.JSONField()
+    ESTADOS = [
+        ('pendiente', 'Pendiente'),
+        ('completado', 'Completado'),
+        ('cancelado', 'Cancelado'),
+    ]
+    estado = models.CharField(max_length=20, choices=ESTADOS, default='pendiente')
 
     def __str__(self):
         return f"{self.usuario} - {self.franja_horaria}"
