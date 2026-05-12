@@ -553,7 +553,7 @@ const finalizarPedidoGestion = async (pedidoId, accion) => {
                   <ul style={{ margin: 0, paddingLeft: '20px' }}>
                     {Object.entries(pedido.items || {}).map(([id, qty]) => {
                       const prod = products.find(p => String(p.id) === String(id));
-                      return <li key={id} style={{ marginBottom: '5px' }}><strong>{qty}x</strong> {prod?.nombre || 'Producto'}</li>;
+                      return <li key={id} style={{ marginBottom: '5px' }}><strong>{qty}x</strong> {prod?.name || 'Producto'}</li>;
                     })}
                   </ul>
                 </div>
@@ -719,12 +719,12 @@ const finalizarPedidoGestion = async (pedidoId, accion) => {
               <span style={{ color: 'var(--orange)', fontWeight: '900' }}>{pedido.total?.toFixed(2)}€</span>
             </div>
 
-            {/* 3. DETALLE DE PRODUCTOS (Opcional pero recomendado) */}
+            {/* 3. DETALLE DE PRODUCTOS */}
             <div style={{ marginTop: '10px', fontSize: '13px', color: '#555', background: '#f9f9f9', padding: '8px', borderRadius: '8px' }}>
               <span style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>Productos:</span>
               {Object.entries(pedido.items || {}).map(([id, qty]) => {
                 const prod = products.find(p => String(p.id) === String(id));
-                return <span key={id} style={{ fontSize: '12px', marginRight: '10px' }}>• {qty}x {prod?.nombre || 'Producto'}</span>;
+                return <span key={id} style={{ fontSize: '12px', marginRight: '10px' }}>• {qty}x {prod?.name || 'Producto'}</span>;
               })}
             </div>
           </div>
