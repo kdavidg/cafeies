@@ -4,7 +4,6 @@ export const getProductos = async () => {
   const response = await fetch(`${API_URL}/productos/`);
   const data = await response.json();
 
-  // Transformar datos de Django → formato React
   return data.map(producto => ({
     id: producto.id,
     name: producto.nombre,

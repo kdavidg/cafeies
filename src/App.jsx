@@ -10,6 +10,13 @@ import LoginForm from './components/Login.jsx';
 import { TIME_SLOTS } from './data/timeSlots.js';
 import { USER } from './data/user.js';
 
+import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
+import { jwtDecode } from 'jwt-decode';
+
+<GoogleOAuthProvider clientId="389069267633-j5n6e0r6p4ec99be2v3hfjderhe54vgh.apps.googleusercontent.com">
+    <CaféIES />
+</GoogleOAuthProvider>
+
 
 export default function CaféIES() {
   const [currentView, setCurrentView] = useState('login');
@@ -22,29 +29,29 @@ export default function CaféIES() {
   const [products, setProducts] = useState([]); 
   const [loading, setLoading] = useState(true);
   const [pedidos, setPedidos] = useState([]);
+  const franjasDisponibles = ["09:00 - 10:00", "10:00 - 11:00", "11:00 - 12:00", "12:00 - 13:00"];
+  const [franjaElegida, setFranjaElegida] = useState('10:45');
+  const [metodoPago, setMetodoPago] = useState('monedero');
+  
 
  useEffect(() => {
   const fetchProducts = async () => {
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/productos/');
+      const response = await fetch('https://backend-production-2b15.up.railway.app/api/productos/');
       const data = await response.json();
-
-      console.log(data);
-
+      
       const formattedProducts = data.map(product => ({
         id: product.id,
         name: product.nombre,
         desc: product.descripcion || "Producto cafetería",
-        price: product.precio,
+        price: parseFloat(product.precio),
         cat: product.categoria || "bebidas",
         emoji: product.emoji || "☕",
-        badges: product.badges || []
+        badges: []
       }));
-
       setProducts(formattedProducts);
-
     } catch (error) {
-      console.error("Error cargando productos de Django:", error);
+      console.error("Error cargando productos:", error);
     } finally {
       setLoading(false);
     }
@@ -52,6 +59,7 @@ export default function CaféIES() {
 
   fetchProducts();
 }, []);
+
 
 useEffect(() => {
   if (currentView === 'history' || currentView === 'menu') {
@@ -62,7 +70,7 @@ useEffect(() => {
 
 const fetchPedidos = async () => {
     try {
-        const response = await fetch('http://127.0.0.1:8000/api/pedidos/lista/');
+        const response = await fetch('https://backend-production-2b15.up.railway.app/api/pedidos/lista/');
         const data = await response.json();
         setPedidos(data);
     } catch (error) {
@@ -89,10 +97,10 @@ useEffect(() => {
   };
 
   const handleLogout = () => {
-    setIsLoggedIn(false);
-    setCurrentView('login');
-  };
-
+  setIsLoggedIn(false);
+  setUser(null);
+  setCurrentView('login');
+};
   const toggleFav = (id) => {
     const newFavs = new Set(favorites);
     newFavs.has(id) ? newFavs.delete(id) : newFavs.add(id);
@@ -111,37 +119,30 @@ useEffect(() => {
 };
 
   const finalizarPedido = async () => {
-  // 1. Preparamos el objeto exactamente como lo espera Django
   const pedidoParaEnviar = {
     usuario: user?.email || "usuario_anonimo@cafeies.com",
     items: orderItems,
     total: orderTotal,
+    franja_horaria: franjaElegida,
     fecha: new Date().toISOString(),
     nota: document.getElementById('order-note-input')?.value || ""
   };
 
-  console.log("Enviando pedido a Django:", pedidoParaEnviar);
-
   try {
-    // IMPORTANTE: Revisa que esta URL sea la misma que en tu urls.py
-    // Si en urls.py pusiste 'api/pedidos/crear/', asegúrate de que termine en /
-    const response = await fetch('http://127.0.0.1:8000/api/pedidos/crear/', {
+    const response = await fetch('https://backend-production-2b15.up.railway.app/api/pedidos/crear/', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(pedidoParaEnviar),
     });
 
     if (response.ok) {
       const result = await response.json();
-      console.log("Respuesta de Mongo:", result);
+      console.log("Respuesta de MySQL:", result);
       
       alert("¡Pedido guardado correctamente! 🎉");
       
-      // Limpiar y navegar
       setOrderItems({});
-      if (typeof fetchPedidos === 'function') fetchPedidos(); // Recarga el historial
+      if (typeof fetchPedidos === 'function') fetchPedidos();
       setCurrentView('history');
     } else {
       const errorText = await response.text();
@@ -154,31 +155,117 @@ useEffect(() => {
   }
 };
 
-  // Filtrado y Cálculos
+const finalizarPedidoGestion = async (pedidoId, accion) => {
+    const nuevoEstado = accion === 'listo' ? 'completado' : 'cancelado';
+    
+    if (!window.confirm(`¿Seguro que quieres marcar como ${accion.toUpperCase()}?`)) return;
+
+    const API_URL = window.location.hostname === "localhost" 
+      ? "http://127.0.0.1:8000" 
+      : "https://backend-production-2b15.up.railway.app";
+
+    try {
+      const response = await fetch(`${API_URL}/api/pedidos/eliminar/${pedidoId}/`, {
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ estado: nuevoEstado }),
+      });
+
+      if (response.ok) {
+        fetchPedidos();
+      } else {
+        alert("Error al actualizar el pedido.");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+    }
+};
+
+
   const filteredProducts = products.filter(p => 
     (selectedCategory === 'todo' || p.cat === selectedCategory) &&
     (p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.desc.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const orderTotal = useMemo(() => {
-    return Object.entries(orderItems).reduce((sum, [id, qty]) => 
-      sum + (products.find(p => p.id == id)?.price || 0) * qty, 0);
-  }, [orderItems, products]);
+  return Object.entries(orderItems).reduce((sum, [id, qty]) => {
+    const product = products.find(p => String(p.id) === String(id));
+    const price = parseFloat(product?.price) || 0; 
+    return sum + (price * qty);
+  }, 0);
+}, [orderItems, products]);
 
   const orderCount = React.useMemo(() => {
     return Object.values(orderItems).reduce((sum, qty) => sum + qty, 0);
   }, [orderItems]);
 
-  // --- RENDER ---
   return (
+    <GoogleOAuthProvider clientId="389069267633-j5n6e0r6p4ec99be2v3hfjderhe54vgh.apps.googleusercontent.com">
     <div className="app-container">
       {!isLoggedIn ? (
-        <div className="login-screen">
-          <div className="login-card">
-            <div className="login-logo-mark">café</div>
-            <h1 className="login-headline">Bienvenido a Café<em>IES</em></h1>
-            <p className="login-sub">Pide sin hacer cola</p>
-            <LoginForm onLogin={handleLogin} onGoogleLogin={handleGoogleLogin} />
+        <div className="login-screen" style={{ 
+          background: 'radial-gradient(circle at center, #2c1a10 0%, #000000 100%)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh',
+          margin: 0
+        }}>
+          <div className="login-card" style={{ 
+            background: 'rgba(255, 255, 255, 0.03)', 
+            backdropFilter: 'blur(15px)',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            padding: '50px 40px',
+            borderRadius: '28px',
+            textAlign: 'center',
+            width: '100%',
+            maxWidth: '420px',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+          }}>
+            <div style={{ 
+              background: '#ff5c1a', 
+              width: '64px', 
+              height: '64px', 
+              borderRadius: '16px', 
+              margin: '0 auto 24px',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              fontSize: '18px',
+              fontWeight: 'bold',
+              color: 'white',
+              boxShadow: '0 8px 20px rgba(255, 92, 26, 0.3)'
+            }}>café</div>
+
+            <h1 style={{ color: 'white', fontSize: '32px', marginBottom: '8px', fontWeight: '800', letterSpacing: '-0.5px' }}>
+              Bienvenido a <span style={{ color: '#ff5c1a' }}>CaféIES</span>
+            </h1>
+            <p style={{ color: 'rgba(255,255,255,0.5)', marginBottom: '35px', fontSize: '15px' }}>Pide sin hacer cola</p>
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'center',
+              width: '100%' 
+            }}>
+              <GoogleLogin
+            onSuccess={credentialResponse => {
+              const decoded = jwtDecode(credentialResponse.credential);
+              console.log("Datos de Google:", decoded);
+
+              setUser({ 
+                name: decoded.given_name,
+                email: decoded.email,
+    });
+    
+    setIsLoggedIn(true);
+    setCurrentView('menu');
+  }}
+  onError={() => console.log('Login Fallido')}
+  theme="outline"
+  size="large"
+  shape="pill"
+  locale="es"
+/>
+            </div>
           </div>
         </div>
       ) : (
@@ -212,16 +299,21 @@ useEffect(() => {
               </div>
               
               <div className="time-slots-wrapper">
-                <span className="slots-label">Selecciona hora de recogida:</span>
+                <span className="slots-label">SELECCIONA HORA DE RECOGIDA:</span>
                 <div className="time-slots-container">
                   {TIME_SLOTS.map(slot => (
-                    <button key={slot.time} className="time-chip">
+                    <button 
+                      key={slot.time} 
+                      className={`time-chip ${franjaElegida === slot.time ? 'active' : ''}`}
+                      onClick={() => setFranjaElegida(slot.time)}
+                      style={franjaElegida === slot.time ? {backgroundColor: 'var(--orange)', color: 'white'} : {}}
+                    >
                       <span className="time-value">{slot.time}</span>
                       <span className="time-label">{slot.label}</span>
-                      </button>
-                    ))}
-                  </div>
+                    </button>
+                  ))}
                 </div>
+              </div>
               </div>
               
                 <div className="category-tabs">
@@ -231,7 +323,7 @@ useEffect(() => {
                       className={`cat-tab ${selectedCategory === cat ? 'active' : ''}`}
                       onClick={() => setSelectedCategory(cat)}
                     >
-                      {cat === 'todo' ? '🥪 Todo' : cat.charAt(0).toUpperCase() + cat.slice(1)}
+                      {cat === 'todo' ? ' Todo' : cat.charAt(0).toUpperCase() + cat.slice(1)}
                     </button>
                   ))}
                 </div>
@@ -252,17 +344,15 @@ useEffect(() => {
                 </div>
               </section>
             )}
-          {/* VISTA DE PAGO (CHECKOUT) */}
-{currentView === 'checkout' && (
-  <section className="view active">
-    <div className="content-header">
-      {/* Botón para volver al menú si el usuario se arrepiente */}
-      <button className="btn-secondary" onClick={() => setCurrentView('menu')} style={{marginRight: '15px'}}>
-        Volver
-      </button>
-      <h2 className="content-title">Finalizar Pedido</h2>
-    </div>
-
+            {/* VISTA DE PAGO (CHECKOUT) */}
+            {currentView === 'checkout' && (
+              <section className="view active">
+                <div className="content-header">
+                  <button className="btn-secondary" onClick={() => setCurrentView('menu')} style={{marginRight: '15px'}}>
+                    Volver
+                  </button>
+                  <h2 className="content-title">Finalizar Pedido</h2>
+                </div>
     <div className="checkout-container" style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '30px', padding: '20px' }}>
       
       {/* Columna Izquierda: Métodos de Pago */}
@@ -270,16 +360,51 @@ useEffect(() => {
         <h3 style={{ marginBottom: '20px' }}>Método de pago</h3>
         
         <div className="payment-options" style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-          <label className="payment-card" style={{ display: 'flex', alignItems: 'center', padding: '20px', border: '2px solid var(--orange)', borderRadius: '15px', cursor: 'pointer', background: 'var(--orange-light)' }}>
-            <input type="radio" name="payment" defaultChecked style={{ marginRight: '15px' }} />
+          
+          {/*MONEDERO */}
+          <label className="payment-card" style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            padding: '20px', 
+            borderRadius: '15px', 
+            cursor: 'pointer',
+            transition: '0.3s',
+            border: metodoPago === 'monedero' ? '2px solid var(--orange)' : '1px solid var(--border)', 
+            background: metodoPago === 'monedero' ? 'var(--orange-light)' : 'white' 
+          }}>
+            <input 
+              type="radio" 
+              name="payment"
+              value="monedero"
+              checked={metodoPago === 'monedero'} 
+              onChange={(e) => setMetodoPago(e.target.value)} 
+              style={{ marginRight: '15px' }} 
+            />
             <div>
               <div style={{ fontWeight: 'bold' }}>💰 Monedero Virtual</div>
               <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Saldo disponible: 14.50€</div>
             </div>
           </label>
 
-          <label className="payment-card" style={{ display: 'flex', alignItems: 'center', padding: '20px', border: '1px solid var(--border)', borderRadius: '15px', cursor: 'pointer' }}>
-            <input type="radio" name="payment" style={{ marginRight: '15px' }} />
+          {/*EFECTIVO*/}
+          <label className="payment-card" style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            padding: '20px', 
+            borderRadius: '15px', 
+            cursor: 'pointer',
+            transition: '0.3s',
+            border: metodoPago === 'efectivo' ? '2px solid var(--orange)' : '1px solid var(--border)', 
+            background: metodoPago === 'efectivo' ? 'var(--orange-light)' : 'white' 
+          }}>
+            <input 
+              type="radio" 
+              name="payment"
+              value="efectivo"
+              checked={metodoPago === 'efectivo'} 
+              onChange={(e) => setMetodoPago(e.target.value)} 
+              style={{ marginRight: '15px' }} 
+            />
             <div>
               <div style={{ fontWeight: 'bold' }}>💵 Efectivo en barra</div>
               <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Paga al recoger tu pedido</div>
@@ -298,12 +423,11 @@ useEffect(() => {
         </div>
       </div>
 
-      {/* Columna Derecha: Resumen Final */}
       <div className="checkout-summary" style={{ background: 'white', padding: '25px', borderRadius: '20px', border: '1px solid var(--border)', height: 'fit-content' }}>
         <h3 style={{ marginBottom: '20px' }}>Resumen</h3>
         <div className="summary-items">
           {Object.entries(orderItems).map(([id, qty]) => {
-            const product = products.find(p => p.id == id);
+            const product = products.find(p => String(p.id) === String(id));
             return (
               <div key={id} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '14px' }}>
                 <span>{qty}x {product?.name}</span>
@@ -318,7 +442,6 @@ useEffect(() => {
           <span>{orderTotal.toFixed(2)}€</span>
         </div>
 
-        {/* BOTÓN MODIFICADO: Ahora llama a la función de conexión con el Backend */}
         <button 
           className="btn-primary" 
           style={{ width: '100%', marginTop: '25px', padding: '15px', fontSize: '16px' }}
@@ -333,124 +456,118 @@ useEffect(() => {
 )}
 
 
-
-
-            {/* VISTA DE PANEL DE CAFETERÍA (ADMIN) */}
+{/* VISTA DE PANEL DE CAFETERÍA (ADMIN) */}
 {currentView === 'admin' && (
-  <section className="view active">
-    <div className="content-header">
-      <h2 className="content-title">Panel de Gestión - Cafetería ☕</h2>
+  <section className="view active admin-view-fix">
+    <div className="admin-header-main" style={{ textAlign: 'center', padding: '20px 0' }}>
+      <h2 style={{ fontSize: '32px', fontWeight: '800', marginBottom: '10px' }}>
+        Panel de Gestión - Cafetería
+      </h2>
+      <button 
+        className="btn-secondary" 
+        onClick={fetchPedidos} 
+        style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 20px' }}
+      >
+        🔄 Actualizar Pedidos
+      </button>
     </div>
 
-    <div className="admin-container" style={{ padding: '20px' }}>
-      <div className="admin-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '15px', marginBottom: '20px' }}>
-        <div style={{ background: '#e3f2fd', padding: '15px', borderRadius: '10px', borderLeft: '5px solid #2196f3' }}>
-          <small>Pedidos hoy</small>
-          <div style={{ fontSize: '20px', fontWeight: 'bold' }}>12</div>
+    <div className="admin-content-wrapper" style={{ maxWidth: '1000px', margin: '0 auto', padding: '0 20px' }}>
+      
+      {/*BLOQUE DE ESTADÍSTICAS */}
+      <div className="stats-row" style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(3, 1fr)', 
+        gap: '20px', 
+        marginBottom: '40px' 
+      }}>
+        <div style={{ background: '#e3f2fd', padding: '20px', borderRadius: '15px', borderLeft: '6px solid #2196f3', textAlign: 'center' }}>
+          <small style={{ fontWeight: 'bold', color: '#1976d2', textTransform: 'uppercase' }}>Pendientes</small>
+          <div style={{ fontSize: '32px', fontWeight: '900' }}>
+            {pedidos.filter(p => p.estado === 'pendiente' || !p.estado).length}
+          </div>
         </div>
-        <div style={{ background: '#fff3e0', padding: '15px', borderRadius: '10px', borderLeft: '5px solid #ff9800' }}>
-          <small>Pendientes</small>
-          <div style={{ fontSize: '20px', fontWeight: 'bold' }}>3</div>
+        
+        <div style={{ background: '#fff3e0', padding: '20px', borderRadius: '15px', borderLeft: '6px solid #ff9800', textAlign: 'center' }}>
+          <small style={{ fontWeight: 'bold', color: '#e65100', textTransform: 'uppercase' }}>Caja Hoy</small>
+          <div style={{ fontSize: '32px', fontWeight: '900' }}>
+            {pedidos
+              .filter(p => p.estado !== 'cancelado')
+              .reduce((acc, p) => acc + (parseFloat(p.total) || 0), 0).toFixed(2)}€
+          </div>
         </div>
-        <div style={{ background: '#e8f5e9', padding: '15px', borderRadius: '10px', borderLeft: '5px solid #4caf50' }}>
-          <small>Recaudado</small>
-          <div style={{ fontSize: '20px', fontWeight: 'bold' }}>42.50€</div>
+
+        <div style={{ background: '#e8f5e9', padding: '20px', borderRadius: '15px', borderLeft: '6px solid #4caf50', textAlign: 'center' }}>
+          <small style={{ fontWeight: 'bold', color: '#2e7d32', textTransform: 'uppercase' }}>Servicio</small>
+          <div style={{ fontSize: '32px', fontWeight: '900' }}>ACTIVO</div>
         </div>
       </div>
 
-      <h3 style={{ marginBottom: '10px' }}>Pedidos en curso</h3>
-      <div className="orders-list" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        {/* Pedido de ejemplo 1 */}
-        <div style={{ background: 'white', padding: '15px', borderRadius: '10px', border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <span style={{ fontWeight: 'bold' }}>#1204 - Ana M. Rodríguez</span>
-            <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>1x Bocadillo de jamón, 1x Café con leche</div>
-          </div>
-          <div style={{ display: 'flex', gap: '5px' }}>
-            <button style={{ padding: '5px 10px', background: '#4caf50', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>Listo</button>
-            <button style={{ padding: '5px 10px', background: '#f44336', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>X</button>
-          </div>
-        </div>
+      {/*LISTADO DE PEDIDOS FILTRADO */}
+      <div className="orders-section">
+        <h3 style={{ marginBottom: '20px', fontSize: '20px', borderBottom: '2px solid #eee', paddingBottom: '10px' }}>
+          Pedidos Entrantes (Sólo Pendientes)
+        </h3>
+        
+        <div className="orders-container-fixed" style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+          {pedidos.filter(p => p.estado === 'pendiente' || !p.estado).length > 0 ? (
+            [...pedidos]
+              .filter(p => p.estado === 'pendiente' || !p.estado)
+              .reverse()
+              .map((pedido) => (
+              <div key={pedido.id} className="admin-order-card" style={{ 
+                background: 'white', padding: '20px', borderRadius: '15px', border: '1px solid #eee', boxShadow: '0 4px 6px rgba(0,0,0,0.02)'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <span style={{ background: '#ff5c1a', color: 'white', padding: '5px 12px', borderRadius: '8px', fontWeight: 'bold' }}>
+                      ⏰ {pedido.franja_horaria || "10:45"}
+                    </span>
+                    <span style={{ fontWeight: 'bold', fontSize: '18px' }}>{pedido.usuario?.split('@')[0]}</span>
+                  </div>
+                  <span style={{ fontWeight: '900', color: '#ff5c1a', fontSize: '20px' }}>{pedido.total?.toFixed(2)}€</span>
+                </div>
 
-        {/* Pedido de ejemplo 2 */}
-        <div style={{ background: 'white', padding: '15px', borderRadius: '10px', border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <span style={{ fontWeight: 'bold' }}>#1205 - Juan Pérez</span>
-            <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>2x Napolitana chocolate</div>
-          </div>
-          <div style={{ display: 'flex', gap: '5px' }}>
-            <button style={{ padding: '5px 10px', background: '#4caf50', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>Listo</button>
-            <button style={{ padding: '5px 10px', background: '#f44336', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>X</button>
-          </div>
+                <div style={{ background: '#f9f9f9', padding: '15px', borderRadius: '10px', marginBottom: '15px' }}>
+                  <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                    {Object.entries(pedido.items || {}).map(([id, qty]) => {
+                      const prod = products.find(p => String(p.id) === String(id));
+                      return <li key={id} style={{ marginBottom: '5px' }}><strong>{qty}x</strong> {prod?.name || 'Producto'}</li>;
+                    })}
+                  </ul>
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button 
+                    onClick={() => finalizarPedidoGestion(pedido.id, 'listo')}
+                    className="btn-primary" 
+                    style={{ flex: 1, background: '#2ecc71', padding: '12px' }}
+                  >
+                    Marcar como Listo
+                  </button>
+                  <button 
+                    onClick={() => finalizarPedidoGestion(pedido.id, 'cancelar')}
+                    className="btn-secondary" 
+                    style={{ background: '#ffeded', color: '#e74c3c', border: '1px solid #ffc1c1', padding: '12px' }}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div style={{ textAlign: 'center', padding: '60px', color: '#ccc' }}>
+              <p style={{ fontSize: '40px' }}>😴</p>
+              <p>No hay pedidos pendientes por ahora.</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
   </section>
 )}
 
-            {/* VISTA DE MI PEDIDO (DETALLADA) */}
-            {currentView === 'cart' && (
-              <section className="view active">
-                <div className="content-header">
-                  <h2 className="content-title">Detalle de tu pedido 🛒</h2>
-                </div>
-
-                <div className="cart-detail-container" style={{ padding: '20px' }}>
-                  {orderCount === 0 ? (
-                    <div style={{ textAlign: 'center', marginTop: '50px' }}>
-                      <div style={{ fontSize: '50px' }}>🛒</div>
-                      <h3>Tu carrito está vacío</h3>
-                      <button 
-                        className="btn-primary" 
-                        onClick={() => setCurrentView('menu')}
-                        style={{ width: 'auto', marginTop: '20px' }}
-                      >
-                        Ir al menú para añadir productos
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="cart-table-wrapper" style={{ background: 'white', borderRadius: '12px', padding: '20px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                        <thead>
-                          <tr style={{ borderBottom: '2px solid var(--border)', textAlign: 'left' }}>
-                            <th style={{ padding: '12px' }}>Producto</th>
-                            <th style={{ padding: '12px' }}>Cantidad</th>
-                            <th style={{ padding: '12px' }}>Precio</th>
-                            <th style={{ padding: '12px' }}>Total</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {Object.entries(orderItems).map(([id, qty]) => {
-                            const product = products.find(p => p.id == id);
-                            return (
-                              <tr key={id} style={{ borderBottom: '1px solid var(--border-light)' }}>
-                                <td style={{ padding: '12px' }}>{product.emoji} {product.name}</td>
-                                <td style={{ padding: '12px' }}>{qty}</td>
-                                <td style={{ padding: '12px' }}>{product.price.toFixed(2)}€</td>
-                                <td style={{ padding: '12px' }}>{(product.price * qty).toFixed(2)}€</td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                      
-                      <div style={{ marginTop: '20px', textAlign: 'right' }}>
-                        <h3 style={{ color: 'var(--orange)' }}>Total a pagar: {orderTotal.toFixed(2)}€</h3>
-                        <button 
-                          className="btn-primary" 
-                          style={{ width: 'auto', marginTop: '10px' }}
-                          onClick={() => alert('¡Pedido enviado a cocina!')}
-                        >
-                          Confirmar y enviar pedido
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </section>
-            )}
-
-            {/* 2. VISTA DE FAVORITOS */}
+            {/*VISTA DE FAVORITOS */}
             {currentView === 'favs' && (
               <section className="view active">
                 <div className="content-header">
@@ -477,51 +594,145 @@ useEffect(() => {
               </section>
             )}
 
-            {/* 3. VISTA DE HISTORIAL*/}
-            {currentView === 'history' && (
-  <section className="view active">
-    <div className="content-header">
-      <h2 className="content-title">Historial de Pedidos 📋</h2>
-    </div>
-    <div className="pedidos-list" style={{ padding: '20px' }}>
-      {pedidos.length > 0 ? (
-        pedidos.map((pedido) => (
-          <div key={pedido.id} className="payment-card" style={{ marginBottom: '15px', display: 'block' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold' }}>
-              <span>Pedido #{pedido.id.slice(-5)}</span>
-              <span style={{ color: 'var(--orange)' }}>{pedido.total?.toFixed(2)}€</span>
+
+            {/*VISTA DE CARRITO*/}
+          {currentView === 'cart' && (
+            <section className="view active">
+              <div className="content-header">
+                <h2 className="content-title">Tu Pedido Actual 🛒</h2>
+              </div>
+              
+              <div className="cart-container" style={{ padding: '20px' }}>
+                {Object.keys(orderItems).length > 0 ? (
+                  <div style={{ background: 'white', padding: '25px', borderRadius: '20px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
+                    {Object.entries(orderItems).map(([id, qty]) => {
+                      const product = products.find(p => String(p.id) === String(id));
+            return (
+              <div key={id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', paddingBottom: '15px', borderBottom: '1px solid #eee' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                  <span style={{ fontSize: '24px' }}>{product?.emoji}</span>
+                  <div>
+                    <div style={{ fontWeight: 'bold' }}>{product?.name}</div>
+                    <div style={{ fontSize: '12px', color: '#666' }}>{product?.price.toFixed(2)}€ / ud.</div>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                  <button onClick={() => changeQty(id, -1)} className="btn-qty">-</button>
+                  <span style={{ fontWeight: 'bold' }}>{qty}</span>
+                  <button onClick={() => changeQty(id, 1)} className="btn-qty">+</button>
+                  <span style={{ marginLeft: '15px', fontWeight: '900', width: '60px', textAlign: 'right' }}>
+                    {(product?.price * qty).toFixed(2)}€
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+          
+          <div style={{ marginTop: '30px', textAlign: 'right' }}>
+            <div style={{ fontSize: '20px', marginBottom: '20px' }}>
+              Total: <span style={{ color: '#ff5c1a', fontWeight: '900' }}>{orderTotal.toFixed(2)}€</span>
             </div>
-            <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-              {new Date(pedido.fecha).toLocaleString()}
-            </p>
-            <div style={{ marginTop: '10px', fontSize: '13px' }}>
-                {/* Aquí podrías listar los productos del pedido si quieres */}
-                Usuario: {pedido.usuario}
-            </div>
+            <button 
+              className="btn-primary" 
+              style={{ padding: '15px 40px' }}
+              onClick={() => setCurrentView('checkout')}
+            >
+              Ir a Pagar
+            </button>
           </div>
-        ))
+        </div>
       ) : (
-        <p>No has realizado ningún pedido todavía.</p>
+        <div style={{ textAlign: 'center', padding: '60px' }}>
+          <p style={{ fontSize: '50px' }}>🛒</p>
+          <h3>Tu carrito está vacío</h3>
+          <button className="btn-secondary" onClick={() => setCurrentView('menu')}>Ir al menú</button>
+        </div>
       )}
     </div>
   </section>
 )}
-          </main>
 
-            {currentView !== 'checkout' && currentView !== 'staff' && currentView !== 'admin' && (
+        {/*VISTA DE HISTORIAL ACTUALIZADA */}
+      {currentView === 'history' && (
+      <section className="view active">
+        <div className="content-header">
+          <h2 className="content-title">Historial de Pedidos 📋</h2>
+        </div>
+        <div className="pedidos-list" style={{ padding: '20px' }}>
+          {pedidos.filter(p => p.usuario === user.email).length > 0 ? (
+            pedidos
+              .filter(p => p.usuario === user.email)
+              .reverse()
+              .map((pedido) => (
+          <div key={pedido.id} className="payment-card" style={{ 
+            marginBottom: '15px', 
+            display: 'block',
+            borderLeft: `6px solid ${
+              pedido.estado === 'completado' ? '#2ecc71' : 
+              pedido.estado === 'cancelado' ? '#e74c3c' : '#ff5c1a'
+            }` 
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', alignItems: 'center' }}>
+              <span>Pedido #{String(pedido.id).slice(-5)}</span>
+              <span style={{ 
+                fontSize: '11px', 
+                padding: '4px 8px', 
+                borderRadius: '12px',
+                textTransform: 'uppercase',
+                background: pedido.estado === 'completado' ? '#e8f5e9' : 
+                            pedido.estado === 'cancelado' ? '#fdecea' : '#fff3e0',
+                color: pedido.estado === 'completado' ? '#2e7d32' : 
+                       pedido.estado === 'cancelado' ? '#c62828' : '#e65100',
+              }}>
+                {pedido.estado || 'en preparación'}
+              </span>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px' }}>
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0 }}>
+                {new Date(pedido.fecha).toLocaleString()}
+              </p>
+              <span style={{ color: 'var(--orange)', fontWeight: '900' }}>{pedido.total?.toFixed(2)}€</span>
+            </div>
+
+            {/*DETALLE DE PRODUCTOS */}
+            <div style={{ marginTop: '10px', fontSize: '13px', color: '#555', background: '#f9f9f9', padding: '8px', borderRadius: '8px' }}>
+              <span style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>Productos:</span>
+              {Object.entries(pedido.items || {}).map(([id, qty]) => {
+                const prod = products.find(p => String(p.id) === String(id));
+                return <span key={id} style={{ fontSize: '12px', marginRight: '10px' }}>• {qty}x {prod?.name || 'Producto'}</span>;
+              })}
+            </div>
+          </div>
+        ))
+      ) : (
+        <div style={{ textAlign: 'center', padding: '40px' }}>
+          <p style={{ fontSize: '40px' }}>🛒</p>
+          <p>No has realizado ningún pedido todavía.</p>
+        </div>
+      )}
+    </div>
+  </section>
+)}
+            </main>
+            {currentView !== 'checkout' && 
+            currentView !== 'staff' && 
+            currentView !== 'admin' && 
+            currentView !== 'cart' && ( 
               <OrderPanel 
-                orderItems={orderItems} 
-                PRODUCTS={products} 
-                orderTotal={orderTotal}
-                orderCount={orderCount}
-                setCurrentView={setCurrentView}
-                setOrderItems={setOrderItems}
-                changeQty={changeQty}
+              orderItems={orderItems} 
+              PRODUCTS={products} 
+              orderTotal={orderTotal}
+              orderCount={orderCount}
+              setCurrentView={setCurrentView}
+              setOrderItems={setOrderItems}
+              changeQty={changeQty}
               />
             )}
           </div>
         </>
       )}
     </div>
+    </GoogleOAuthProvider>
   );
 }
