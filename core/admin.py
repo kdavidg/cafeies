@@ -1,24 +1,27 @@
 from django.contrib import admin
 from .models import Producto, Pedido
 
-# Configuración para Productos
+# 1. Configuración para Productos
 @admin.register(Producto)
 class ProductoAdmin(admin.ModelAdmin):
-    # Esto hará que en el panel veas las columnas de nombre, precio y categoría
-    list_display = ('nombre', 'precio', 'categoria', 'emoji')
-    # Permite filtrar por categoría en el lateral derecho
+    # Columnas visibles en la lista
+    list_display = ('id', 'nombre', 'precio', 'categoria', 'emoji')
+    # Filtros laterales
     list_filter = ('categoria',)
-    # Permite buscar productos por nombre
+    # Buscador por nombre
     search_fields = ('nombre',)
 
-# Configuración para Pedidos
+# 2. Configuración para Pedidos
 @admin.register(Pedido)
 class PedidoAdmin(admin.ModelAdmin):
-    # Esto añade columnas al panel negro
+    # Columnas principales
     list_display = ('id', 'usuario', 'total', 'estado', 'franja_horaria', 'fecha')
-    # Esto añade un filtro a la derecha para ver solo los pendientes
+    # Filtros laterales (aquí es donde podrás filtrar por "pendiente")
     list_filter = ('estado', 'franja_horaria', 'fecha')
-    # Esto permite cambiar el estado directamente desde la lista
+    # Permite cambiar el estado sin entrar al detalle del pedido
     list_editable = ('estado',)
+    # Ordenar por fecha (el más nuevo arriba)
+    ordering = ('-fecha',)
 
-admin.site.register(Producto)
+# --- IMPORTANTE: NO pongas admin.site.register(Producto) aquí abajo ---
+# Al usar los decoradores @admin.register arriba, ya están registrados correctamente.
