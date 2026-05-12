@@ -154,8 +154,9 @@ useEffect(() => {
 };
 
 const finalizarPedidoGestion = async (pedidoId, accion) => {
-    if (!window.confirm(`¿Marcar como ${accion.toUpperCase()} este pedido?`)) return;
+    if (!window.confirm(`¿Seguro que quieres marcar como ${accion.toUpperCase()}?`)) return;
 
+    // Detectar si usamos local o Railway
     const API_URL = window.location.hostname === "localhost" 
       ? "http://127.0.0.1:8000" 
       : "https://backend-production-2b15.up.railway.app";
@@ -166,12 +167,13 @@ const finalizarPedidoGestion = async (pedidoId, accion) => {
       });
 
       if (response.ok) {
-        fetchPedidos(); // Refresca la lista automáticamente
+        fetchPedidos(); // Refresca la lista para que el pedido desaparezca
       } else {
-        alert("No se pudo eliminar el pedido del servidor");
+        alert("Error: El servidor no permitió eliminar el pedido.");
       }
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Error de conexión:", error);
+      alert("No se pudo conectar con el servidor.");
     }
   };
 
