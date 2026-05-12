@@ -14,9 +14,11 @@ class ProductoAdmin(admin.ModelAdmin):
 # Configuración para Pedidos
 @admin.register(Pedido)
 class PedidoAdmin(admin.ModelAdmin):
-    # Mostramos los campos importantes, incluyendo la franja horaria que pediste
-    list_display = ('id', 'usuario', 'total', 'franja_horaria', 'fecha')
-    list_filter = ('franja_horaria', 'fecha')
-    search_fields = ('usuario',)
-    # Esto hace que la fecha sea de solo lectura para que no se pueda modificar por error
-    readonly_fields = ('fecha',)
+    # Esto añade columnas al panel negro
+    list_display = ('id', 'usuario', 'total', 'estado', 'franja_horaria', 'fecha')
+    # Esto añade un filtro a la derecha para ver solo los pendientes
+    list_filter = ('estado', 'franja_horaria', 'fecha')
+    # Esto permite cambiar el estado directamente desde la lista
+    list_editable = ('estado',)
+
+admin.site.register(Producto)
