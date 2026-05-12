@@ -24,6 +24,7 @@ export default function CaféIES() {
   const [pedidos, setPedidos] = useState([]);
   const franjasDisponibles = ["09:00 - 10:00", "10:00 - 11:00", "11:00 - 12:00", "12:00 - 13:00"];
   const [franjaElegida, setFranjaElegida] = useState('10:45');
+  const [metodoPago, setMetodoPago] = useState('monedero');
 
  useEffect(() => {
   const fetchProducts = async () => {
@@ -133,7 +134,7 @@ useEffect(() => {
 
     if (response.ok) {
       const result = await response.json();
-      console.log("Respuesta de Mongo:", result);
+      console.log("Respuesta de MySQL:", result);
       
       alert("¡Pedido guardado correctamente! 🎉");
       
@@ -151,6 +152,29 @@ useEffect(() => {
     alert("No se pudo conectar con el servidor. ¿Está Django encendido?");
   }
 };
+
+const finalizarPedidoGestion = async (pedidoId, accion) => {
+    if (!window.confirm(`¿Marcar como ${accion.toUpperCase()} este pedido?`)) return;
+
+    const API_URL = window.location.hostname === "localhost" 
+      ? "http://127.0.0.1:8000" 
+      : "https://backend-production-2b15.up.railway.app";
+
+    try {
+      const response = await fetch(`${API_URL}/api/pedidos/eliminar/${pedidoId}/`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        fetchPedidos(); // Refresca la lista automáticamente
+      } else {
+        alert("No se pudo eliminar el pedido del servidor");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+    }
+  };
+
 
   // Filtrado y Cálculos
   const filteredProducts = products.filter(p => 
@@ -260,11 +284,10 @@ useEffect(() => {
                 </div>
               </section>
             )}
-          {/* VISTA DE PAGO (CHECKOUT) */}
+{/* VISTA DE PAGO (CHECKOUT) */}
 {currentView === 'checkout' && (
   <section className="view active">
     <div className="content-header">
-      {/* Botón para volver al menú si el usuario se arrepiente */}
       <button className="btn-secondary" onClick={() => setCurrentView('menu')} style={{marginRight: '15px'}}>
         Volver
       </button>
@@ -278,16 +301,53 @@ useEffect(() => {
         <h3 style={{ marginBottom: '20px' }}>Método de pago</h3>
         
         <div className="payment-options" style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-          <label className="payment-card" style={{ display: 'flex', alignItems: 'center', padding: '20px', border: '2px solid var(--orange)', borderRadius: '15px', cursor: 'pointer', background: 'var(--orange-light)' }}>
-            <input type="radio" name="payment" defaultChecked style={{ marginRight: '15px' }} />
+          
+          {/* OPCIÓN 1: MONEDERO */}
+          <label className="payment-card" style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            padding: '20px', 
+            borderRadius: '15px', 
+            cursor: 'pointer',
+            transition: '0.3s',
+            // El borde y el fondo cambian dinámicamente:
+            border: metodoPago === 'monedero' ? '2px solid var(--orange)' : '1px solid var(--border)', 
+            background: metodoPago === 'monedero' ? 'var(--orange-light)' : 'white' 
+          }}>
+            <input 
+              type="radio" 
+              name="payment" // Mismo nombre para que se deseleccionen entre sí
+              value="monedero"
+              checked={metodoPago === 'monedero'} 
+              onChange={(e) => setMetodoPago(e.target.value)} 
+              style={{ marginRight: '15px' }} 
+            />
             <div>
               <div style={{ fontWeight: 'bold' }}>💰 Monedero Virtual</div>
               <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Saldo disponible: 14.50€</div>
             </div>
           </label>
 
-          <label className="payment-card" style={{ display: 'flex', alignItems: 'center', padding: '20px', border: '1px solid var(--border)', borderRadius: '15px', cursor: 'pointer' }}>
-            <input type="radio" name="payment" style={{ marginRight: '15px' }} />
+          {/* OPCIÓN 2: EFECTIVO */}
+          <label className="payment-card" style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            padding: '20px', 
+            borderRadius: '15px', 
+            cursor: 'pointer',
+            transition: '0.3s',
+            // El borde y el fondo cambian dinámicamente:
+            border: metodoPago === 'efectivo' ? '2px solid var(--orange)' : '1px solid var(--border)', 
+            background: metodoPago === 'efectivo' ? 'var(--orange-light)' : 'white' 
+          }}>
+            <input 
+              type="radio" 
+              name="payment" // Mismo nombre para que se deseleccionen entre sí
+              value="efectivo"
+              checked={metodoPago === 'efectivo'} 
+              onChange={(e) => setMetodoPago(e.target.value)} 
+              style={{ marginRight: '15px' }} 
+            />
             <div>
               <div style={{ fontWeight: 'bold' }}>💵 Efectivo en barra</div>
               <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Paga al recoger tu pedido</div>
@@ -311,7 +371,7 @@ useEffect(() => {
         <h3 style={{ marginBottom: '20px' }}>Resumen</h3>
         <div className="summary-items">
           {Object.entries(orderItems).map(([id, qty]) => {
-            const product = products.find(p => p.id == id);
+            const product = products.find(p => String(p.id) === String(id));
             return (
               <div key={id} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '14px' }}>
                 <span>{qty}x {product?.name}</span>
@@ -326,7 +386,6 @@ useEffect(() => {
           <span>{orderTotal.toFixed(2)}€</span>
         </div>
 
-        {/* BOTÓN MODIFICADO: Ahora llama a la función de conexión con el Backend */}
         <button 
           className="btn-primary" 
           style={{ width: '100%', marginTop: '25px', padding: '15px', fontSize: '16px' }}
@@ -341,122 +400,115 @@ useEffect(() => {
 )}
 
 
-
-
-            {/* VISTA DE PANEL DE CAFETERÍA (ADMIN) */}
+{/* VISTA DE PANEL DE CAFETERÍA (ADMIN) - VERSIÓN CORREGIDA */}
 {currentView === 'admin' && (
-  <section className="view active">
-    <div className="content-header">
-      <h2 className="content-title">Panel de Gestión - Cafetería ☕</h2>
+  <section className="view active admin-view-fix">
+    {/* 1. CABECERA FIJA */}
+    <div className="admin-header-main" style={{ textAlign: 'center', padding: '20px 0' }}>
+      <h2 style={{ fontSize: '32px', fontWeight: '800', marginBottom: '10px' }}>
+        Panel de Gestión - Cafetería
+      </h2>
+      <button 
+        className="btn-secondary" 
+        onClick={fetchPedidos} 
+        style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', padding: '10px 20px' }}
+      >
+        🔄 Actualizar Pedidos
+      </button>
     </div>
 
-    <div className="admin-container" style={{ padding: '20px' }}>
-      <div className="admin-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '15px', marginBottom: '20px' }}>
-        <div style={{ background: '#e3f2fd', padding: '15px', borderRadius: '10px', borderLeft: '5px solid #2196f3' }}>
-          <small>Pedidos hoy</small>
-          <div style={{ fontSize: '20px', fontWeight: 'bold' }}>12</div>
+    <div className="admin-content-wrapper" style={{ maxWidth: '1000px', margin: '0 auto', padding: '0 20px' }}>
+      
+      {/* 2. BLOQUE DE ESTADÍSTICAS (SIEMPRE ARRIBA) */}
+      <div className="stats-row" style={{ 
+        display: 'grid', 
+        gridTemplateColumns: 'repeat(3, 1fr)', 
+        gap: '20px', 
+        marginBottom: '40px' 
+      }}>
+        <div style={{ background: '#e3f2fd', padding: '20px', borderRadius: '15px', borderLeft: '6px solid #2196f3', textAlign: 'center' }}>
+          <small style={{ fontWeight: 'bold', color: '#1976d2', textTransform: 'uppercase' }}>Pedidos Hoy</small>
+          <div style={{ fontSize: '32px', fontWeight: '900' }}>{pedidos.length}</div>
         </div>
-        <div style={{ background: '#fff3e0', padding: '15px', borderRadius: '10px', borderLeft: '5px solid #ff9800' }}>
-          <small>Pendientes</small>
-          <div style={{ fontSize: '20px', fontWeight: 'bold' }}>3</div>
+        
+        <div style={{ background: '#fff3e0', padding: '20px', borderRadius: '15px', borderLeft: '6px solid #ff9800', textAlign: 'center' }}>
+          <small style={{ fontWeight: 'bold', color: '#e65100', textTransform: 'uppercase' }}>Caja Estimada</small>
+          <div style={{ fontSize: '32px', fontWeight: '900' }}>
+            {pedidos.reduce((acc, p) => acc + (parseFloat(p.total) || 0), 0).toFixed(2)}€
+          </div>
         </div>
-        <div style={{ background: '#e8f5e9', padding: '15px', borderRadius: '10px', borderLeft: '5px solid #4caf50' }}>
-          <small>Recaudado</small>
-          <div style={{ fontSize: '20px', fontWeight: 'bold' }}>42.50€</div>
+
+        <div style={{ background: '#e8f5e9', padding: '20px', borderRadius: '15px', borderLeft: '6px solid #4caf50', textAlign: 'center' }}>
+          <small style={{ fontWeight: 'bold', color: '#2e7d32', textTransform: 'uppercase' }}>Servicio</small>
+          <div style={{ fontSize: '32px', fontWeight: '900' }}>ACTIVO</div>
         </div>
       </div>
 
-      <h3 style={{ marginBottom: '10px' }}>Pedidos en curso</h3>
-      <div className="orders-list" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        {/* Pedido de ejemplo 1 */}
-        <div style={{ background: 'white', padding: '15px', borderRadius: '10px', border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <span style={{ fontWeight: 'bold' }}>#1204 - Ana M. Rodríguez</span>
-            <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>1x Bocadillo de jamón, 1x Café con leche</div>
-          </div>
-          <div style={{ display: 'flex', gap: '5px' }}>
-            <button style={{ padding: '5px 10px', background: '#4caf50', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>Listo</button>
-            <button style={{ padding: '5px 10px', background: '#f44336', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>X</button>
-          </div>
-        </div>
+      {/* 3. LISTADO DE PEDIDOS */}
+      <div className="orders-section">
+        <h3 style={{ marginBottom: '20px', fontSize: '20px', borderBottom: '2px solid #eee', paddingBottom: '10px' }}>
+          Pedidos Entrantes
+        </h3>
+        
+        <div className="orders-container-fixed" style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+          {pedidos.length > 0 ? (
+            [...pedidos].reverse().map((pedido) => (
+              <div key={pedido.id} className="admin-order-card" style={{ 
+                background: 'white', padding: '20px', borderRadius: '15px', border: '1px solid #eee', boxShadow: '0 4px 6px rgba(0,0,0,0.02)'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <span style={{ background: '#ff5c1a', color: 'white', padding: '5px 12px', borderRadius: '8px', fontWeight: 'bold' }}>
+                      ⏰ {pedido.franja_horaria || "10:45"}
+                    </span>
+                    <span style={{ fontWeight: 'bold', fontSize: '18px' }}>{pedido.usuario?.split('@')[0]}</span>
+                  </div>
+                  <span style={{ fontWeight: '900', color: '#ff5c1a', fontSize: '20px' }}>{pedido.total?.toFixed(2)}€</span>
+                </div>
 
-        {/* Pedido de ejemplo 2 */}
-        <div style={{ background: 'white', padding: '15px', borderRadius: '10px', border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <span style={{ fontWeight: 'bold' }}>#1205 - Juan Pérez</span>
-            <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>2x Napolitana chocolate</div>
-          </div>
-          <div style={{ display: 'flex', gap: '5px' }}>
-            <button style={{ padding: '5px 10px', background: '#4caf50', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>Listo</button>
-            <button style={{ padding: '5px 10px', background: '#f44336', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>X</button>
-          </div>
+                <div style={{ background: '#f9f9f9', padding: '15px', borderRadius: '10px', marginBottom: '15px' }}>
+                  <ul style={{ margin: 0, paddingLeft: '20px' }}>
+                    {Object.entries(pedido.items || {}).map(([id, qty]) => {
+                      const prod = products.find(p => String(p.id) === String(id));
+                      return <li key={id} style={{ marginBottom: '5px' }}><strong>{qty}x</strong> {prod?.name || 'Producto'}</li>;
+                    })}
+                  </ul>
+                  {pedido.nota && (
+                    <div style={{ marginTop: '10px', color: '#888', fontStyle: 'italic', fontSize: '13px', borderTop: '1px solid #eee', paddingTop: '8px' }}>
+                      Nota: "{pedido.nota}"
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button 
+                    onClick={() => finalizarPedidoGestion(pedido.id, 'listo')}
+                    className="btn-primary" 
+                    style={{ flex: 1, background: '#2ecc71', padding: '12px' }}
+                  >
+                    Marcar como Listo
+                  </button>
+                  <button 
+                    onClick={() => finalizarPedidoGestion(pedido.id, 'cancelar')}
+                    className="btn-secondary" 
+                    style={{ background: '#ffeded', color: '#e74c3c', border: '1px solid #ffc1c1', padding: '12px' }}
+                  >
+                    Cancelar
+                  </button>
+                </div>
+              </div>
+            ))
+          ) : (
+            <div style={{ textAlign: 'center', padding: '60px', color: '#ccc' }}>
+              <p style={{ fontSize: '40px' }}>😴</p>
+              <p>No hay pedidos pendientes por ahora.</p>
+            </div>
+          )}
         </div>
       </div>
     </div>
   </section>
 )}
-
-            {/* VISTA DE MI PEDIDO (DETALLADA) */}
-            {currentView === 'cart' && (
-              <section className="view active">
-                <div className="content-header">
-                  <h2 className="content-title">Detalle de tu pedido 🛒</h2>
-                </div>
-
-                <div className="cart-detail-container" style={{ padding: '20px' }}>
-                  {orderCount === 0 ? (
-                    <div style={{ textAlign: 'center', marginTop: '50px' }}>
-                      <div style={{ fontSize: '50px' }}>🛒</div>
-                      <h3>Tu carrito está vacío</h3>
-                      <button 
-                        className="btn-primary" 
-                        onClick={() => setCurrentView('menu')}
-                        style={{ width: 'auto', marginTop: '20px' }}
-                      >
-                        Ir al menú para añadir productos
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="cart-table-wrapper" style={{ background: 'white', borderRadius: '12px', padding: '20px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                        <thead>
-                          <tr style={{ borderBottom: '2px solid var(--border)', textAlign: 'left' }}>
-                            <th style={{ padding: '12px' }}>Producto</th>
-                            <th style={{ padding: '12px' }}>Cantidad</th>
-                            <th style={{ padding: '12px' }}>Precio</th>
-                            <th style={{ padding: '12px' }}>Total</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {Object.entries(orderItems).map(([id, qty]) => {
-                            const product = products.find(p => p.id == id);
-                            return (
-                              <tr key={id} style={{ borderBottom: '1px solid var(--border-light)' }}>
-                                <td style={{ padding: '12px' }}>{product.emoji} {product.name}</td>
-                                <td style={{ padding: '12px' }}>{qty}</td>
-                                <td style={{ padding: '12px' }}>{product.price.toFixed(2)}€</td>
-                                <td style={{ padding: '12px' }}>{(product.price * qty).toFixed(2)}€</td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                      
-                      <div style={{ marginTop: '20px', textAlign: 'right' }}>
-                        <h3 style={{ color: 'var(--orange)' }}>Total a pagar: {orderTotal.toFixed(2)}€</h3>
-                        <button 
-                          className="btn-primary" 
-                          style={{ width: 'auto', marginTop: '10px' }}
-                          onClick={() => alert('¡Pedido enviado a cocina!')}
-                        >
-                          Confirmar y enviar pedido
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </section>
-            )}
 
             {/* 2. VISTA DE FAVORITOS */}
             {currentView === 'favs' && (
@@ -514,17 +566,19 @@ useEffect(() => {
     </div>
   </section>
 )}
-          </main>
-
-            {currentView !== 'checkout' && currentView !== 'staff' && currentView !== 'admin' && (
+            </main>
+            {currentView !== 'checkout' && 
+            currentView !== 'staff' && 
+            currentView !== 'admin' && 
+            currentView !== 'cart' && ( 
               <OrderPanel 
-                orderItems={orderItems} 
-                PRODUCTS={products} 
-                orderTotal={orderTotal}
-                orderCount={orderCount}
-                setCurrentView={setCurrentView}
-                setOrderItems={setOrderItems}
-                changeQty={changeQty}
+              orderItems={orderItems} 
+              PRODUCTS={products} 
+              orderTotal={orderTotal}
+              orderCount={orderCount}
+              setCurrentView={setCurrentView}
+              setOrderItems={setOrderItems}
+              changeQty={changeQty}
               />
             )}
           </div>
