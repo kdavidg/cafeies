@@ -1,19 +1,34 @@
-# React + Vite
-
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
-
-Currently, two official plugins are available:
-
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
-
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the ESLint configuration
-
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
-
+# Proyecto CaféIES - Sistema de Gestión de Pedidos
 
 Hecho por Mario Sanchez y Kleiner David Gonzaga
+
+## Descripción
+Aplicación web diseñada para la gestión de pedidos en la cafetería del instituto. Permite a los usuarios visualizar el menú, realizar pedidos programados por franjas horarias y gestionar el historial de compras.
+
+## Tecnologías Utilizadas
+* Frontend: React.js
+* Autenticación: Google OAuth 2.0 (Google Cloud Console)
+* Backend: Django / Django REST Framework
+* Base de datos: PostgreSQL (Hosteado en Railway)
+* Estilos: CSS3 con soporte para modo oscuro y diseño responsive
+
+## Funcionalidades Principales
+1.  Autenticación: Acceso seguro mediante cuentas corporativas o personales de Google.
+2.  Menú Interactivo: Filtrado de productos por categorías (bebidas, bocadillos, dulces, fresco).
+3.  Gestión de Carrito: Añadir, eliminar y modificar cantidades en tiempo real.
+4.  Sistema de Horarios: Selección de franja horaria específica para la recogida del pedido.
+5.  Panel de Administración: Interfaz para que el personal de la cafetería gestione pedidos entrantes
+6.  Historial: Registro de pedidos anteriores con estados de preparación (pendiente, listo, completado).
+
+## Configuración del Entorno
+1.  Instalar dependencias: `npm install`
+2.  Configurar el Client ID de Google en el componente GoogleOAuthProvider.
+3.  Vincular la URL de la API del backend en las funciones de fetch.
+4.  Ejecutar en desarrollo: `npm run dev`
+
+## Estructura de Datos
+Los productos incluyen los siguientes campos obligatorios:
+* Nombre
+* Precio
+* Categoría
+* Emoji identificador
