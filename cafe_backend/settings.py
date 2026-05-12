@@ -25,6 +25,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware', 
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -63,6 +64,12 @@ DATABASES = {
 # 6. Configuración de CORS para el Frontend
 CORS_ALLOW_ALL_ORIGINS = True 
 
+CSRF_TRUSTED_ORIGINS = [
+    'https://backend-production-2b15.up.railway.app',
+    'https://cafeies-production.up.railway.app', # Pon la URL de tu frontend también
+]
+
+
 # 7. Otros ajustes
 LANGUAGE_CODE = 'es-es'
 TIME_ZONE = 'UTC'
@@ -70,3 +77,7 @@ USE_I18N = True
 USE_TZ = True
 STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+STATIC_URL = 'static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles') # Para producción
+STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
