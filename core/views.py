@@ -66,7 +66,6 @@ from django.contrib.auth import login
 from django.shortcuts import redirect
 
 def auto_login(request):
-    # Esto busca al usuario 'admin', si no existe lo crea, y te loguea
     user, created = User.objects.get_or_create(username='admin', defaults={'is_staff': True, 'is_superuser': True})
     if created:
         user.set_password('admin1234')
@@ -74,3 +73,15 @@ def auto_login(request):
     
     login(request, user)
     return redirect('/admin/')
+
+
+@csrf_exempt
+def eliminar_pedido(request, pk):
+    if request.method == 'DELETE' or request.method == 'POST':
+        try:
+            pedido = Pedido.objects.get(pk=pk)
+            pedido.delete()
+            return JsonResponse({'status': 'ok'}, status=200)
+        except Pedido.DoesNotExist:
+            return JsonResponse({'error': 'No encontrado'}, status=404)
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
