@@ -2,14 +2,12 @@ from pathlib import Path
 import dj_database_url
 import os
 
-# 1. Directorio base
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 SECRET_KEY = 'django-insecure-662-^utj+%ssqkp1w-9ix*acyczg2tvseppi)&v)sur2^5l5dp'
 DEBUG = True
 ALLOWED_HOSTS = ['*', '.railway.app']
 
-# 3. Aplicaciones
 INSTALLED_APPS = [
     'django.contrib.admin',
     'django.contrib.auth',
@@ -21,7 +19,6 @@ INSTALLED_APPS = [
     'core',
 ]
 
-# 4. Middleware (CORS debe ir arriba)
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware', 
     'django.middleware.security.SecurityMiddleware',
@@ -61,7 +58,6 @@ DATABASES = {
     )
 }
 
-# 6. Configuración de CORS para el Frontend
 CORS_ALLOW_ALL_ORIGINS = True 
 
 CSRF_TRUSTED_ORIGINS = [
@@ -70,7 +66,6 @@ CSRF_TRUSTED_ORIGINS = [
 ]
 
 
-# 7. Otros ajustes
 LANGUAGE_CODE = 'es-es'
 TIME_ZONE = 'UTC'
 USE_I18N = True
@@ -79,7 +74,7 @@ STATIC_URL = 'static/'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 STATIC_URL = 'static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles') # Para producción
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
 STATICFILES_STORAGE = 'whitenoise.storage.CompressedManifestStaticFilesStorage'
 
 CSRF_TRUSTED_ORIGINS = ['https://*.railway.app']

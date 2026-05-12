@@ -1,6 +1,6 @@
 from django.contrib import admin
 from django.urls import path
-# Importamos solo lo que realmente usamos
+
 from core.views import listar_productos, crear_pedido, listar_pedidos, gestionar_pedido
 
 urlpatterns = [

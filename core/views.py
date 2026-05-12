@@ -4,7 +4,6 @@ from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import get_object_or_404
 from .models import Producto, Pedido 
 
-# 1. LISTAR PRODUCTOS
 def listar_productos(request):
     try:
         productos = Producto.objects.all()
@@ -23,7 +22,6 @@ def listar_productos(request):
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
 
-# 2. CREAR PEDIDO
 @csrf_exempt
 def crear_pedido(request):
     if request.method == 'POST':
@@ -34,13 +32,12 @@ def crear_pedido(request):
                 total=data.get('total'),
                 franja_horaria=data.get('franja_horaria'),
                 items=data.get('items'),
-                estado='pendiente' # Se asegura de que nazca como pendiente
+                estado='pendiente'
             )
             return JsonResponse({"status": "ok", "id": nuevo_pedido.id}, status=201)
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=400)
 
-# 3. LISTAR PEDIDOS (Incluyendo el estado para el historial)
 def listar_pedidos(request):
     try:
         pedidos = Pedido.objects.all().order_by('-fecha')
@@ -53,13 +50,12 @@ def listar_pedidos(request):
                 "franja_horaria": p.franja_horaria,
                 "fecha": p.fecha.isoformat(),
                 "items": p.items,
-                "estado": p.estado  # ¡ESTO ES VITAL PARA EL HISTORIAL!
+                "estado": p.estado
             })
         return JsonResponse(lista_final, safe=False)
     except Exception as e:
         return JsonResponse({"error": "Error interno", "detalle": str(e)}, status=500)
 
-# 4. GESTIONAR PEDIDO (Marcar como listo/cancelado en lugar de borrar)
 @csrf_exempt
 def gestionar_pedido(request, pk):
     pedido = get_object_or_404(Pedido, pk=pk)
@@ -72,3 +68,4 @@ def gestionar_pedido(request, pk):
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
     return JsonResponse({'error': 'Método no permitido'}, status=405)
+
