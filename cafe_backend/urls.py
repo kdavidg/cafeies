@@ -5,7 +5,6 @@ from core.views import listar_productos, crear_pedido, listar_pedidos, auto_logi
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('entrar-ya-mismo/', auto_login),
     path('api/productos/', listar_productos),
     path('api/pedidos/crear/', crear_pedido),
     path('api/pedidos/lista/', listar_pedidos),
