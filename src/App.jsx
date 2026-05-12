@@ -130,7 +130,6 @@ useEffect(() => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(pedidoParaEnviar),
     });
-    // ... resto del código
 
     if (response.ok) {
       const result = await response.json();
@@ -154,28 +153,32 @@ useEffect(() => {
 };
 
 const finalizarPedidoGestion = async (pedidoId, accion) => {
+    // accion será 'completado' o 'cancelado'
+    const nuevoEstado = accion === 'listo' ? 'completado' : 'cancelado';
+    
     if (!window.confirm(`¿Seguro que quieres marcar como ${accion.toUpperCase()}?`)) return;
 
-    // Detectar si usamos local o Railway
     const API_URL = window.location.hostname === "localhost" 
       ? "http://127.0.0.1:8000" 
       : "https://backend-production-2b15.up.railway.app";
 
     try {
+      // Cambiamos el método de 'DELETE' a 'POST' o 'PATCH'
       const response = await fetch(`${API_URL}/api/pedidos/eliminar/${pedidoId}/`, {
-        method: 'DELETE',
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ estado: nuevoEstado }),
       });
 
       if (response.ok) {
-        fetchPedidos(); // Refresca la lista para que el pedido desaparezca
+        fetchPedidos(); // Refresca las listas
       } else {
-        alert("Error: El servidor no permitió eliminar el pedido.");
+        alert("Error al actualizar el pedido.");
       }
     } catch (error) {
-      console.error("Error de conexión:", error);
-      alert("No se pudo conectar con el servidor.");
+      console.error("Error:", error);
     }
-  };
+};
 
 
   // Filtrado y Cálculos
@@ -402,7 +405,7 @@ const finalizarPedidoGestion = async (pedidoId, accion) => {
 )}
 
 
-{/* VISTA DE PANEL DE CAFETERÍA (ADMIN) - VERSIÓN CORREGIDA */}
+{/* VISTA DE PANEL DE CAFETERÍA (ADMIN) - VERSIÓN CON ESTADOS */}
 {currentView === 'admin' && (
   <section className="view active admin-view-fix">
     {/* 1. CABECERA FIJA */}
@@ -421,22 +424,27 @@ const finalizarPedidoGestion = async (pedidoId, accion) => {
 
     <div className="admin-content-wrapper" style={{ maxWidth: '1000px', margin: '0 auto', padding: '0 20px' }}>
       
-      {/* 2. BLOQUE DE ESTADÍSTICAS (SIEMPRE ARRIBA) */}
+      {/* 2. BLOQUE DE ESTADÍSTICAS */}
       <div className="stats-row" style={{ 
         display: 'grid', 
         gridTemplateColumns: 'repeat(3, 1fr)', 
         gap: '20px', 
         marginBottom: '40px' 
       }}>
+        {/* Solo contamos los que NO están cancelados para la estadística */}
         <div style={{ background: '#e3f2fd', padding: '20px', borderRadius: '15px', borderLeft: '6px solid #2196f3', textAlign: 'center' }}>
-          <small style={{ fontWeight: 'bold', color: '#1976d2', textTransform: 'uppercase' }}>Pedidos Hoy</small>
-          <div style={{ fontSize: '32px', fontWeight: '900' }}>{pedidos.length}</div>
+          <small style={{ fontWeight: 'bold', color: '#1976d2', textTransform: 'uppercase' }}>Pendientes</small>
+          <div style={{ fontSize: '32px', fontWeight: '900' }}>
+            {pedidos.filter(p => p.estado === 'pendiente' || !p.estado).length}
+          </div>
         </div>
         
         <div style={{ background: '#fff3e0', padding: '20px', borderRadius: '15px', borderLeft: '6px solid #ff9800', textAlign: 'center' }}>
-          <small style={{ fontWeight: 'bold', color: '#e65100', textTransform: 'uppercase' }}>Caja Estimada</small>
+          <small style={{ fontWeight: 'bold', color: '#e65100', textTransform: 'uppercase' }}>Caja Hoy</small>
           <div style={{ fontSize: '32px', fontWeight: '900' }}>
-            {pedidos.reduce((acc, p) => acc + (parseFloat(p.total) || 0), 0).toFixed(2)}€
+            {pedidos
+              .filter(p => p.estado !== 'cancelado')
+              .reduce((acc, p) => acc + (parseFloat(p.total) || 0), 0).toFixed(2)}€
           </div>
         </div>
 
@@ -446,15 +454,19 @@ const finalizarPedidoGestion = async (pedidoId, accion) => {
         </div>
       </div>
 
-      {/* 3. LISTADO DE PEDIDOS */}
+      {/* 3. LISTADO DE PEDIDOS FILTRADO */}
       <div className="orders-section">
         <h3 style={{ marginBottom: '20px', fontSize: '20px', borderBottom: '2px solid #eee', paddingBottom: '10px' }}>
-          Pedidos Entrantes
+          Pedidos Entrantes (Sólo Pendientes)
         </h3>
         
         <div className="orders-container-fixed" style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-          {pedidos.length > 0 ? (
-            [...pedidos].reverse().map((pedido) => (
+          {/* CRÍTICO: Filtramos para que el admin vea solo los pendientes */}
+          {pedidos.filter(p => p.estado === 'pendiente' || !p.estado).length > 0 ? (
+            [...pedidos]
+              .filter(p => p.estado === 'pendiente' || !p.estado)
+              .reverse()
+              .map((pedido) => (
               <div key={pedido.id} className="admin-order-card" style={{ 
                 background: 'white', padding: '20px', borderRadius: '15px', border: '1px solid #eee', boxShadow: '0 4px 6px rgba(0,0,0,0.02)'
               }}>
@@ -472,14 +484,9 @@ const finalizarPedidoGestion = async (pedidoId, accion) => {
                   <ul style={{ margin: 0, paddingLeft: '20px' }}>
                     {Object.entries(pedido.items || {}).map(([id, qty]) => {
                       const prod = products.find(p => String(p.id) === String(id));
-                      return <li key={id} style={{ marginBottom: '5px' }}><strong>{qty}x</strong> {prod?.name || 'Producto'}</li>;
+                      return <li key={id} style={{ marginBottom: '5px' }}><strong>{qty}x</strong> {prod?.nombre || 'Producto'}</li>;
                     })}
                   </ul>
-                  {pedido.nota && (
-                    <div style={{ marginTop: '10px', color: '#888', fontStyle: 'italic', fontSize: '13px', borderTop: '1px solid #eee', paddingTop: '8px' }}>
-                      Nota: "{pedido.nota}"
-                    </div>
-                  )}
                 </div>
 
                 <div style={{ display: 'flex', gap: '10px' }}>
@@ -539,31 +546,67 @@ const finalizarPedidoGestion = async (pedidoId, accion) => {
               </section>
             )}
 
-            {/* 3. VISTA DE HISTORIAL*/}
-            {currentView === 'history' && (
+            {/* 3. VISTA DE HISTORIAL ACTUALIZADA */}
+{currentView === 'history' && (
   <section className="view active">
     <div className="content-header">
       <h2 className="content-title">Historial de Pedidos 📋</h2>
     </div>
     <div className="pedidos-list" style={{ padding: '20px' }}>
-      {pedidos.length > 0 ? (
-        pedidos.map((pedido) => (
-          <div key={pedido.id} className="payment-card" style={{ marginBottom: '15px', display: 'block' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold' }}>
-              <span>Pedido #{pedido.id.slice(-5)}</span>
-              <span style={{ color: 'var(--orange)' }}>{pedido.total?.toFixed(2)}€</span>
+      {/* 1. FILTRO: Solo mostramos los pedidos del usuario logueado */}
+      {pedidos.filter(p => p.usuario === user.email).length > 0 ? (
+        pedidos
+          .filter(p => p.usuario === user.email)
+          .reverse() // Para que el más nuevo salga arriba
+          .map((pedido) => (
+          <div key={pedido.id} className="payment-card" style={{ 
+            marginBottom: '15px', 
+            display: 'block',
+            borderLeft: `6px solid ${
+              pedido.estado === 'completado' ? '#2ecc71' : 
+              pedido.estado === 'cancelado' ? '#e74c3c' : '#ff5c1a'
+            }` 
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', alignItems: 'center' }}>
+              <span>Pedido #{String(pedido.id).slice(-5)}</span>
+              
+              {/* 2. ETIQUETA DE ESTADO DINÁMICA */}
+              <span style={{ 
+                fontSize: '11px', 
+                padding: '4px 8px', 
+                borderRadius: '12px',
+                textTransform: 'uppercase',
+                background: pedido.estado === 'completado' ? '#e8f5e9' : 
+                            pedido.estado === 'cancelado' ? '#fdecea' : '#fff3e0',
+                color: pedido.estado === 'completado' ? '#2e7d32' : 
+                       pedido.estado === 'cancelado' ? '#c62828' : '#e65100',
+              }}>
+                {pedido.estado || 'en preparación'}
+              </span>
             </div>
-            <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-              {new Date(pedido.fecha).toLocaleString()}
-            </p>
-            <div style={{ marginTop: '10px', fontSize: '13px' }}>
-                {/* Aquí podrías listar los productos del pedido si quieres */}
-                Usuario: {pedido.usuario}
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px' }}>
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0 }}>
+                {new Date(pedido.fecha).toLocaleString()}
+              </p>
+              <span style={{ color: 'var(--orange)', fontWeight: '900' }}>{pedido.total?.toFixed(2)}€</span>
+            </div>
+
+            {/* 3. DETALLE DE PRODUCTOS (Opcional pero recomendado) */}
+            <div style={{ marginTop: '10px', fontSize: '13px', color: '#555', background: '#f9f9f9', padding: '8px', borderRadius: '8px' }}>
+              <span style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>Productos:</span>
+              {Object.entries(pedido.items || {}).map(([id, qty]) => {
+                const prod = products.find(p => String(p.id) === String(id));
+                return <span key={id} style={{ fontSize: '12px', marginRight: '10px' }}>• {qty}x {prod?.nombre || 'Producto'}</span>;
+              })}
             </div>
           </div>
         ))
       ) : (
-        <p>No has realizado ningún pedido todavía.</p>
+        <div style={{ textAlign: 'center', padding: '40px' }}>
+          <p style={{ fontSize: '40px' }}>🛒</p>
+          <p>No has realizado ningún pedido todavía.</p>
+        </div>
       )}
     </div>
   </section>
