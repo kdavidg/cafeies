@@ -60,3 +60,18 @@ def listar_pedidos(request):
         return JsonResponse(lista_final, safe=False)
     except Exception as e:
         return JsonResponse({"error": "Error interno", "detalle": str(e)}, status=500)
+    
+
+from django.contrib.auth.models import User
+from django.contrib.auth import login
+from django.shortcuts import redirect
+
+def auto_login(request):
+    # Esto busca al usuario 'admin', si no existe lo crea, y te loguea
+    user, created = User.objects.get_or_create(username='admin', defaults={'is_staff': True, 'is_superuser': True})
+    if created:
+        user.set_password('admin1234')
+        user.save()
+    
+    login(request, user)
+    return redirect('/admin/')
