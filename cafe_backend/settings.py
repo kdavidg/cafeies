@@ -53,11 +53,11 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'cafe_backend.wsgi.application'
 
-# 5. Base de Datos (MySQL en Railway / SQLite en Local)
 DATABASES = {
     'default': dj_database_url.config(
-        default='sqlite:///db.sqlite3',
-        conn_max_age=600
+        default='mysql://root:UVjnRajzpvaSPfkghRQdTKpgrzzWQhAS@mysql.railway.internal:3306/railway', 
+        conn_max_age=600,
+        ssl_require=False
     )
 }
 
@@ -66,7 +66,7 @@ CORS_ALLOW_ALL_ORIGINS = True
 
 CSRF_TRUSTED_ORIGINS = [
     'https://backend-production-2b15.up.railway.app',
-    'https://cafeies-production.up.railway.app', # Pon la URL de tu frontend también
+    'https://cafeies-production.up.railway.app',
 ]
 
 
