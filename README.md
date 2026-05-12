@@ -9,7 +9,7 @@ Aplicación web diseñada para la gestión de pedidos en la cafetería del insti
 * Frontend: React.js
 * Autenticación: Google OAuth 2.0 (Google Cloud Console)
 * Backend: Django / Django REST Framework
-* Base de datos: PostgreSQL (Hosteado en Railway)
+* Base de datos: MySQL (Hosteado en Railway)
 * Estilos: CSS3 con soporte para modo oscuro y diseño responsive
 
 ## Funcionalidades Principales
