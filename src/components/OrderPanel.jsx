@@ -18,7 +18,7 @@ function OrderPanel({ orderItems, PRODUCTS, orderTotal, orderCount, setCurrentVi
       {/* LISTA DE PRODUCTOS CON SCROLL */}
       <div className="order-items-list" style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
         {Object.entries(orderItems).map(([id, qty]) => {
-          const product = PRODUCTS.find(p => p.id === id);
+          const product = PRODUCTS.find(p => String(p.id) === String(id));
           return (
             <div key={id} className="order-item" style={{ 
               display: 'flex', 

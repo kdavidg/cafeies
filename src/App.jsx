@@ -37,7 +37,7 @@ export default function CaféIES() {
         id: product.id,
         name: product.nombre,
         desc: product.descripcion || "Producto cafetería",
-        price: product.precio,
+        price: parseFloat(product.precio),
         cat: product.categoria || "bebidas",
         emoji: product.emoji || "☕",
         badges: product.badges || []
@@ -159,9 +159,12 @@ useEffect(() => {
   );
 
   const orderTotal = useMemo(() => {
-    return Object.entries(orderItems).reduce((sum, [id, qty]) => 
-      sum + (products.find(p => p.id == id)?.price || 0) * qty, 0);
-  }, [orderItems, products]);
+  return Object.entries(orderItems).reduce((sum, [id, qty]) => {
+    const product = products.find(p => String(p.id) === String(id));
+    const price = parseFloat(product?.price) || 0; 
+    return sum + (price * qty);
+  }, 0);
+}, [orderItems, products]);
 
   const orderCount = React.useMemo(() => {
     return Object.values(orderItems).reduce((sum, qty) => sum + qty, 0);
