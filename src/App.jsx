@@ -268,7 +268,7 @@ const finalizarPedidoGestion = async (pedidoId, accion) => {
                       className={`cat-tab ${selectedCategory === cat ? 'active' : ''}`}
                       onClick={() => setSelectedCategory(cat)}
                     >
-                      {cat === 'todo' ? '🥪 Todo' : cat.charAt(0).toUpperCase() + cat.slice(1)}
+                      {cat === 'todo' ? ' Todo' : cat.charAt(0).toUpperCase() + cat.slice(1)}
                     </button>
                   ))}
                 </div>
@@ -545,6 +545,64 @@ const finalizarPedidoGestion = async (pedidoId, accion) => {
                 </div>
               </section>
             )}
+
+
+            {/* --- VISTA DE CARRITO (LA QUE TE FALTA) --- */}
+{currentView === 'cart' && (
+  <section className="view active">
+    <div className="content-header">
+      <h2 className="content-title">Tu Pedido Actual 🛒</h2>
+    </div>
+    
+    <div className="cart-container" style={{ padding: '20px' }}>
+      {Object.keys(orderItems).length > 0 ? (
+        <div style={{ background: 'white', padding: '25px', borderRadius: '20px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
+          {Object.entries(orderItems).map(([id, qty]) => {
+            const product = products.find(p => String(p.id) === String(id));
+            return (
+              <div key={id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', paddingBottom: '15px', borderBottom: '1px solid #eee' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                  <span style={{ fontSize: '24px' }}>{product?.emoji}</span>
+                  <div>
+                    <div style={{ fontWeight: 'bold' }}>{product?.name}</div>
+                    <div style={{ fontSize: '12px', color: '#666' }}>{product?.price.toFixed(2)}€ / ud.</div>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                  <button onClick={() => changeQty(id, -1)} className="btn-qty">-</button>
+                  <span style={{ fontWeight: 'bold' }}>{qty}</span>
+                  <button onClick={() => changeQty(id, 1)} className="btn-qty">+</button>
+                  <span style={{ marginLeft: '15px', fontWeight: '900', width: '60px', textAlign: 'right' }}>
+                    {(product?.price * qty).toFixed(2)}€
+                  </span>
+                </div>
+              </div>
+            );
+          })}
+          
+          <div style={{ marginTop: '30px', textAlign: 'right' }}>
+            <div style={{ fontSize: '20px', marginBottom: '20px' }}>
+              Total: <span style={{ color: '#ff5c1a', fontWeight: '900' }}>{orderTotal.toFixed(2)}€</span>
+            </div>
+            <button 
+              className="btn-primary" 
+              style={{ padding: '15px 40px' }}
+              onClick={() => setCurrentView('checkout')}
+            >
+              Ir a Pagar
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div style={{ textAlign: 'center', padding: '60px' }}>
+          <p style={{ fontSize: '50px' }}>🛒</p>
+          <h3>Tu carrito está vacío</h3>
+          <button className="btn-secondary" onClick={() => setCurrentView('menu')}>Ir al menú</button>
+        </div>
+      )}
+    </div>
+  </section>
+)}
 
             {/* 3. VISTA DE HISTORIAL ACTUALIZADA */}
 {currentView === 'history' && (
