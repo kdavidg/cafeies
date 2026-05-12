@@ -1,77 +1,62 @@
 import json
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
-from bson import ObjectId
+# Importamos los modelos de MySQL (asegúrate de que existan en models.py)
+from .models import Producto, Pedido 
 
-# Importamos la conexión
-try:
-    from core.db_connection import db
-except ImportError:
-    import core.db_connection as mongo_db
-    db = mongo_db.db
-
+# 1. LISTAR PRODUCTOS (Desde MySQL)
 def listar_productos(request):
     try:
-        # Usamos db directamente
-        coleccion = db['productos']
-        productos_mongo = list(coleccion.find({}))
+        # Obtenemos todos los productos de MySQL
+        productos = Producto.objects.all()
         
         lista_final = []
-        for p in productos_mongo:
+        for p in productos:
             lista_final.append({
-                "id": str(p['_id']),
-                "nombre": p.get('nombre', 'Producto sin nombre'),
-                "precio": p.get('precio', 0.0),
-                "descripcion": p.get('descripcion', ''),
-                "categoria": p.get('categoria', 'bebidas'),
-                "emoji": p.get('emoji', '☕'),
-                "badges": p.get('badges', [])
+                "id": p.id,
+                "nombre": p.nombre,
+                "precio": float(p.precio), # Decimal a float para JSON
+                "descripcion": getattr(p, 'descripcion', 'Producto cafetería'),
+                "categoria": p.categoria,
+                "emoji": p.emoji,
+                "badges": getattr(p, 'badges', [])
             })
         return JsonResponse(lista_final, safe=False)
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
 
+# 2. CREAR PEDIDO (En MySQL con franja horaria)
 @csrf_exempt
 def crear_pedido(request):
     if request.method == 'POST':
         try:
-            datos_pedido = json.loads(request.body)
-            
-            # --- CORRECCIÓN AQUÍ ---
-            # Si 'db' ya es la conexión a la base de datos 'cafe_db'
-            # NO uses .client, usa db directamente:
-            coleccion = db['pedidos']
-            
-            resultado = coleccion.insert_one(datos_pedido)
-            
-            print(f"✅ Pedido insertado con ID: {resultado.inserted_id}")
-            
-            return JsonResponse({
-                "status": "success",
-                "id": str(resultado.inserted_id)
-            }, status=201)
+            datos = json.loads(request.body)
+            # Guardamos en MySQL usando el modelo
+            nuevo_pedido = Pedido.objects.create(
+                usuario=datos.get('usuario', 'Anónimo'),
+                total=datos.get('total', 0.0),
+                franja_horaria=datos.get('franja_horaria', 'No seleccionada'),
+                items=datos.get('items', [])
+            )
+            return JsonResponse({"status": "success", "id": nuevo_pedido.id}, status=201)
         except Exception as e:
-            print(f"❌ Error al insertar: {e}")
             return JsonResponse({"status": "error", "message": str(e)}, status=400)
-    
-    return JsonResponse({"status": "error", "message": "Método no permitido"}, status=405)
 
+# 3. LISTAR PEDIDOS (Para el historial desde MySQL)
 def listar_pedidos(request):
     try:
-        # Usamos db directamente
-        coleccion = db['pedidos']
-        pedidos_mongo = list(coleccion.find({}))
+        pedidos = Pedido.objects.all().order_by('-fecha') # Los más recientes primero
         
         lista_final = []
-        for p in pedidos_mongo:
+        for p in pedidos:
             lista_final.append({
-                "id": str(p.get('_id')),
-                "usuario": p.get('usuario', 'Anónimo'),
-                "total": p.get('total', 0.0),
-                "fecha": p.get('fecha', ''),
-                "items": p.get('items', {})
+                "id": str(p.id),
+                "usuario": p.usuario,
+                "total": float(p.total),
+                "franja_horaria": p.franja_horaria,
+                "fecha": p.fecha.isoformat(),
+                "items": p.items
             })
         return JsonResponse(lista_final, safe=False)
     except Exception as e:
-        print(f"--- ERROR LISTAR ---: {e}")
         return JsonResponse({"error": "Error interno", "detalle": str(e)}, status=500)

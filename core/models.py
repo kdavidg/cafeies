@@ -1,12 +1,17 @@
-# core/models.py
 from django.db import models
 
 class Producto(models.Model):
     nombre = models.CharField(max_length=100)
-    precio = models.FloatField() # MongoDB maneja bien Float
-    descripcion = models.TextField(blank=True)
-    categoria = models.CharField(max_length=50, default='bebidas')
+    precio = models.DecimalField(max_digits=6, decimal_places=2)
     emoji = models.CharField(max_length=10, default='☕')
+    categoria = models.CharField(max_length=50, default='bebidas')
+
+class Pedido(models.Model):
+    usuario = models.CharField(max_length=100)
+    total = models.DecimalField(max_digits=10, decimal_places=2)
+    fecha = models.DateTimeField(auto_now_add=True)
+    franja_horaria = models.CharField(max_length=50) 
+    items = models.JSONField()
 
     def __str__(self):
-        return self.nombre
+        return f"{self.usuario} - {self.franja_horaria}"
