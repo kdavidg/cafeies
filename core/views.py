@@ -29,23 +29,22 @@ def listar_productos(request):
 @csrf_exempt
 def crear_pedido(request):
     if request.method == 'POST':
+        data = json.loads(request.body)
         try:
-            datos = json.loads(request.body)
-            # Guardamos en MySQL usando el modelo
             nuevo_pedido = Pedido.objects.create(
-                usuario=datos.get('usuario', 'Anónimo'),
-                total=datos.get('total', 0.0),
-                franja_horaria=datos.get('franja_horaria', 'No seleccionada'),
-                items=datos.get('items', [])
+                usuario=data.get('usuario'),
+                total=data.get('total'),
+                franja_horaria=data.get('franja_horaria'),
+                items=data.get('items') # Aquí se guarda el objeto del carrito
             )
-            return JsonResponse({"status": "success", "id": nuevo_pedido.id}, status=201)
+            return JsonResponse({"status": "ok", "id": nuevo_pedido.id}, status=201)
         except Exception as e:
-            return JsonResponse({"status": "error", "message": str(e)}, status=400)
+            return JsonResponse({"error": str(e)}, status=400)
 
 # 3. LISTAR PEDIDOS (Para el historial desde MySQL)
 def listar_pedidos(request):
     try:
-        pedidos = Pedido.objects.all().order_by('-fecha') # Los más recientes primero
+        pedidos = Pedido.objects.all().order_by('-fecha')
         
         lista_final = []
         for p in pedidos:
