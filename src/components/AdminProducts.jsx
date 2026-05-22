@@ -134,7 +134,7 @@ export default function AdminProducts({ user }) {
   if (loading) return <div style={{ padding: '20px' }}>Cargando...</div>;
 
   return (
-    <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
+    <div style={{ padding: '0' }}>
       {/* BOTÓN AGREGAR */}
       <div style={{ marginBottom: '30px' }}>
         <button
