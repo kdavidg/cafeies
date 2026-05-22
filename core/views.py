@@ -78,3 +78,57 @@ def es_admin(request):
     
     es_administrador = email == admin_email
     return JsonResponse({'es_admin': es_administrador})
+
+@csrf_exempt
+def crear_producto(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            nuevo_producto = Producto.objects.create(
+                nombre=data.get('nombre'),
+                precio=data.get('precio'),
+                emoji=data.get('emoji', '☕'),
+                categoria=data.get('categoria', 'bebidas'),
+                descripcion=data.get('descripcion', ''),
+                stock=data.get('stock', 0)
+            )
+            return JsonResponse({
+                "id": nuevo_producto.id,
+                "nombre": nuevo_producto.nombre,
+                "precio": float(nuevo_producto.precio),
+                "emoji": nuevo_producto.emoji,
+                "categoria": nuevo_producto.categoria,
+                "descripcion": nuevo_producto.descripcion,
+                "stock": nuevo_producto.stock
+            }, status=201)
+        except Exception as e:
+            return JsonResponse({"error": str(e)}, status=400)
+
+@csrf_exempt
+def editar_producto(request, pk):
+    producto = get_object_or_404(Producto, pk=pk)
+    if request.method == 'POST' or request.method == 'PATCH':
+        try:
+            data = json.loads(request.body)
+            producto.nombre = data.get('nombre', producto.nombre)
+            producto.precio = data.get('precio', producto.precio)
+            producto.emoji = data.get('emoji', producto.emoji)
+            producto.categoria = data.get('categoria', producto.categoria)
+            producto.descripcion = data.get('descripcion', producto.descripcion)
+            producto.stock = data.get('stock', producto.stock)
+            producto.save()
+            return JsonResponse({'status': 'ok', 'message': 'Producto actualizado'})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+@csrf_exempt
+def borrar_producto(request, pk):
+    producto = get_object_or_404(Producto, pk=pk)
+    if request.method == 'POST' or request.method == 'DELETE':
+        try:
+            producto.delete()
+            return JsonResponse({'status': 'ok', 'message': 'Producto eliminado'})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+    return JsonResponse({'error': 'Método no permitido'}, status=405)
