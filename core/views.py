@@ -16,6 +16,7 @@ def listar_productos(request):
                 "descripcion": getattr(p, 'descripcion', 'Producto cafetería'),
                 "categoria": p.categoria,
                 "emoji": p.emoji,
+                "stock": p.stock,
                 "badges": getattr(p, 'badges', [])
             })
         return JsonResponse(lista_final, safe=False)
