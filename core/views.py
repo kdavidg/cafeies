@@ -70,3 +70,11 @@ def gestionar_pedido(request, pk):
             return JsonResponse({'error': str(e)}, status=400)
     return JsonResponse({'error': 'Método no permitido'}, status=405)
 
+
+def es_admin(request):
+    """Verifica si el usuario actual es admin"""
+    email = request.GET.get('email', '')
+    admin_email = 'davidgonzaga140@gmail.com'
+    
+    es_administrador = email == admin_email
+    return JsonResponse({'es_admin': es_administrador})

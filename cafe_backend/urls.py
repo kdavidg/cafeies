@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import path
 
-from core.views import listar_productos, crear_pedido, listar_pedidos, gestionar_pedido
+from core.views import listar_productos, crear_pedido, listar_pedidos, gestionar_pedido, es_admin
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -9,4 +9,5 @@ urlpatterns = [
     path('api/pedidos/crear/', crear_pedido),
     path('api/pedidos/lista/', listar_pedidos),
     path('api/pedidos/eliminar/<int:pk>/', gestionar_pedido, name='gestionar-pedido'),
+    path('api/es-admin/', es_admin, name='es_admin'),
 ]
