@@ -1,35 +1,27 @@
 import React, { useState, useEffect } from 'react';
 
+const ADMIN_EMAIL = 'davidgonzaga140@gmail.com';
+
 export default function AdminPanel({ user }) {
-  const [esAdmin, setEsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
+  const esAdmin = user.email === ADMIN_EMAIL;
 
   useEffect(() => {
-    const verificarAdmin = async () => {
-      try {
-        const response = await fetch(
-          `https://backend-production-2b15.up.railway.app/api/es-admin/?email=${user.email}`
-        );
-        const data = await response.json();
-        setEsAdmin(data.es_admin);
-      } catch (error) {
-        console.error('Error verificando admin:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+    setLoading(false);
+  }, []);
 
-    verificarAdmin();
-  }, [user.email]);
-
-  if (loading) return <div>Cargando...</div>;
-  if (!esAdmin) return <div>No tienes acceso al panel admin</div>;
+  if (loading) return <div style={{ padding: '20px' }}>Cargando...</div>;
+  if (!esAdmin) return <div style={{ padding: '20px' }}>No tienes acceso al panel admin</div>;
 
   return (
-    <div style={{ padding: '20px' }}>
-      <h1>Panel Administrador</h1>
-      <p>Bienvenido, {user.email}</p>
-      {/* Aquí irán los tabs de Pedidos y Productos */}
-    </div>
+    <section className="view active">
+      <div className="content-header">
+        <h2 className="content-title">Panel Administrador</h2>
+      </div>
+      <div style={{ padding: '20px' }}>
+        <p>Bienvenido, {user.email}</p>
+        {/* Aquí irán los tabs de Pedidos y Productos */}
+      </div>
+    </section>
   );
 }
