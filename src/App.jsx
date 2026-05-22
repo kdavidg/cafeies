@@ -432,6 +432,9 @@ const finalizarPedidoGestion = async (pedidoId, accion) => {
 
       <div className="checkout-summary" style={{ background: 'white', padding: '25px', borderRadius: '20px', border: '1px solid var(--border)', height: 'fit-content' }}>
         <h3 style={{ marginBottom: '20px' }}>Resumen</h3>
+        <div style={{ background: '#fff3e0', padding: '12px', borderRadius: '8px', marginBottom: '15px', textAlign: 'center', fontWeight: 'bold', color: '#ff5c1a', fontSize: '14px' }}>
+          📍 {franjaElegida}
+        </div>
         <div className="summary-items">
           {Object.entries(orderItems).map(([id, qty]) => {
             const product = products.find(p => String(p.id) === String(id));
