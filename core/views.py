@@ -50,12 +50,13 @@ def listar_pedidos(request):
                 "franja_horaria": p.franja_horaria,
                 "fecha": p.fecha.isoformat(),
                 "items": p.items,
-                "estado": p.estado
+                "estado": p.estado,
+                "codigo": p.codigo
             })
         return JsonResponse(lista_final, safe=False)
     except Exception as e:
         return JsonResponse({"error": "Error interno", "detalle": str(e)}, status=500)
-
+    
 @csrf_exempt
 def gestionar_pedido(request, pk):
     pedido = get_object_or_404(Pedido, pk=pk)
