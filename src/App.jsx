@@ -137,23 +137,22 @@ useEffect(() => {
     });
 
     if (response.ok) {
-      const result = await response.json();
-      console.log("Respuesta de MySQL:", result);
-      
-      alert("¡Pedido guardado correctamente! 🎉");
-      
-      setOrderItems({});
-      if (typeof fetchPedidos === 'function') fetchPedidos();
-      setCurrentView('history');
-    } else {
-      const errorText = await response.text();
-      console.error("Error del servidor Django:", errorText);
-      alert("Error al guardar: " + errorText);
-    }
-  } catch (error) {
-    console.error("Error de conexión (CORS o Servidor apagado):", error);
-    alert("No se pudo conectar con el servidor. ¿Está Django encendido?");
-  }
+  const result = await response.json();
+  console.log("Respuesta de MySQL:", result);
+  
+  alert("¡Pedido guardado correctamente! 🎉");
+  
+  setOrderItems({});
+  fetchPedidos();
+  setCurrentView('history');
+} else {
+  const errorData = await response.json();
+  alert("⚠️ " + (errorData.error || "Error al guardar"));
+}
+} catch (error) {
+  console.error("Error de conexión (CORS o Servidor apagado):", error);
+  alert("❌ No se pudo conectar con el servidor");
+}
 };
 
 const finalizarPedidoGestion = async (pedidoId, accion) => {
