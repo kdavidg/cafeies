@@ -28,16 +28,28 @@ def crear_pedido(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
+            items = data.get('items', {})
+            
+            # Validar stock disponible
+            for producto_id, cantidad in items.items():
+                producto = get_object_or_404(Producto, pk=producto_id)
+                if producto.stock < cantidad:
+                    return JsonResponse({
+                        "error": f"Stock insuficiente para {producto.nombre}. Disponible: {producto.stock}, Solicitado: {cantidad}"
+                    }, status=400)
+            
+            # Si hay stock, crear pedido
             nuevo_pedido = Pedido.objects.create(
                 usuario=data.get('usuario'),
                 total=data.get('total'),
                 franja_horaria=data.get('franja_horaria'),
-                items=data.get('items'),
+                items=items,
                 estado='pendiente'
             )
             return JsonResponse({"status": "ok", "id": nuevo_pedido.id}, status=201)
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=400)
+        
 
 def listar_pedidos(request):
     try:
@@ -64,7 +76,17 @@ def gestionar_pedido(request, pk):
     if request.method == 'POST' or request.method == 'PATCH':
         try:
             data = json.loads(request.body)
-            pedido.estado = data.get('estado', 'completado') 
+            nuevo_estado = data.get('estado', 'completado')
+            
+            # Si marca como completado, decrementar stock
+            if nuevo_estado == 'completado' and pedido.estado != 'completado':
+                items = pedido.items or {}
+                for producto_id, cantidad in items.items():
+                    producto = get_object_or_404(Producto, pk=producto_id)
+                    producto.stock -= cantidad
+                    producto.save()
+            
+            pedido.estado = nuevo_estado
             pedido.save()
             return JsonResponse({'status': 'ok', 'message': 'Pedido actualizado'})
         except Exception as e:
