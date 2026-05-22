@@ -6,6 +6,7 @@ import SideBar from './components/Sidebar.jsx';
 import ProductCard from './components/ProductCard.jsx';
 import OrderPanel from './components/OrderPanel.jsx';
 import LoginForm from './components/Login.jsx';
+import AdminPanel from './pages/AdminPanel.jsx';
 
 import { TIME_SLOTS } from './data/timeSlots.js';
 import { USER } from './data/user.js';
@@ -287,6 +288,7 @@ const finalizarPedidoGestion = async (pedidoId, accion) => {
               orderCount={orderCount}
               user={user}
               handleLogout={handleLogout}
+              onClick={() => setCurrentView('admin')}
             />
            <main className="app-main">
             {/* 1. VISTA DE MENÚ*/}
@@ -566,6 +568,13 @@ const finalizarPedidoGestion = async (pedidoId, accion) => {
     </div>
   </section>
 )}
+
+
+            {/*VISTA DE ADMIN */}
+            {currentView === 'admin' && (
+              <AdminPanel user={user} />
+            )}
+
 
             {/*VISTA DE FAVORITOS */}
             {currentView === 'favs' && (
