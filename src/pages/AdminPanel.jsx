@@ -66,37 +66,39 @@ export default function AdminPanel({ user, products }) {
 
       <div style={{ padding: '20px' }}>
         {/* TABS PRINCIPALES */}
-        <div style={{ display: 'flex', gap: '10px', marginBottom: '30px' }}>
-          <button
+        <div style={{ display: 'flex', gap: '10px', marginBottom: '30px', minHeight: '44px', alignItems: 'center' }}>
+        <button
             onClick={() => { setTab('pedidos'); setSubTab('pendientes'); }}
             style={{
-              padding: '12px 24px',
-              background: tab === 'pedidos' ? '#ff5c1a' : '#f0f0f0',
-              color: tab === 'pedidos' ? 'white' : '#333',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontWeight: 'bold',
-              fontSize: '16px',
+            padding: '12px 24px',
+            background: tab === 'pedidos' ? '#ff5c1a' : '#f0f0f0',
+            color: tab === 'pedidos' ? 'white' : '#333',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontWeight: 'bold',
+            fontSize: '16px',
+            whiteSpace: 'nowrap',
             }}
-          >
+        >
             📋 Pedidos
-          </button>
-          <button
+        </button>
+        <button
             onClick={() => setTab('productos')}
             style={{
-              padding: '12px 24px',
-              background: tab === 'productos' ? '#2ecc71' : '#f0f0f0',
-              color: tab === 'productos' ? 'white' : '#333',
-              border: 'none',
-              borderRadius: '8px',
-              cursor: 'pointer',
-              fontWeight: 'bold',
-              fontSize: '16px',
+            padding: '12px 24px',
+            background: tab === 'productos' ? '#2ecc71' : '#f0f0f0',
+            color: tab === 'productos' ? 'white' : '#333',
+            border: 'none',
+            borderRadius: '8px',
+            cursor: 'pointer',
+            fontWeight: 'bold',
+            fontSize: '16px',
+            whiteSpace: 'nowrap',
             }}
-          >
+        >
             🍱 Productos
-          </button>
+        </button>
         </div>
 
         {/* VISTA DE PEDIDOS */}
