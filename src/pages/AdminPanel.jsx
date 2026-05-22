@@ -4,7 +4,7 @@ const ADMIN_EMAIL = 'davidgonzaga140@gmail.com';
 
 export default function AdminPanel({ user, products }) {
   const [pedidos, setPedidos] = useState([]);
-  const [tab, setTab] = useState('pendientes'); // 'pendientes' o 'completados'
+  const [tab, setTab] = useState('pendientes');
   const [loading, setLoading] = useState(true);
 
   const esAdmin = user?.email === ADMIN_EMAIL;
@@ -21,7 +21,7 @@ export default function AdminPanel({ user, products }) {
       const data = await response.json();
       setPedidos(data);
     } catch (error) {
-      console.error('Error cargando pedidos:', error);
+      console.error('Error:', error);
     } finally {
       setLoading(false);
     }
@@ -42,48 +42,40 @@ export default function AdminPanel({ user, products }) {
 
       if (response.ok) {
         fetchPedidos();
-        alert('Pedido actualizado');
-      } else {
-        alert('Error al actualizar');
+        alert('✅ Pedido actualizado');
       }
     } catch (error) {
       console.error('Error:', error);
     }
   };
 
-  if (!esAdmin) {
-    return <div style={{ padding: '20px' }}>No tienes acceso</div>;
-  }
+  if (!esAdmin) return <div style={{ padding: '20px' }}>No tienes acceso</div>;
+  if (loading) return <div style={{ padding: '20px' }}>Cargando...</div>;
 
-  if (loading) {
-    return <div style={{ padding: '20px' }}>Cargando...</div>;
-  }
-
-  // Filtrar por estado
   const pedidosPendientes = pedidos.filter(p => p.estado === 'pendiente');
   const pedidosCompletados = pedidos.filter(p => p.estado === 'completado');
-
   const mostrar = tab === 'pendientes' ? pedidosPendientes : pedidosCompletados;
 
   return (
     <section className="view active">
       <div className="content-header">
-        <h2 className="content-title">📊 Panel Administrador - Pedidos</h2>
+        <h2 className="content-title">📊 Panel Administrador</h2>
       </div>
 
       <div style={{ padding: '20px' }}>
         {/* TABS */}
-        <div style={{ display: 'flex', gap: '10px', marginBottom: '20px', borderBottom: '2px solid #eee' }}>
+        <div style={{ display: 'flex', gap: '10px', marginBottom: '30px' }}>
           <button
             onClick={() => setTab('pendientes')}
             style={{
-              padding: '10px 20px',
+              padding: '12px 24px',
               background: tab === 'pendientes' ? '#ff5c1a' : '#f0f0f0',
               color: tab === 'pendientes' ? 'white' : '#333',
               border: 'none',
-              borderRadius: '8px 8px 0 0',
+              borderRadius: '8px',
               cursor: 'pointer',
               fontWeight: 'bold',
+              fontSize: '16px',
             }}
           >
             ⏳ Pendientes ({pedidosPendientes.length})
@@ -91,96 +83,113 @@ export default function AdminPanel({ user, products }) {
           <button
             onClick={() => setTab('completados')}
             style={{
-              padding: '10px 20px',
+              padding: '12px 24px',
               background: tab === 'completados' ? '#2ecc71' : '#f0f0f0',
               color: tab === 'completados' ? 'white' : '#333',
               border: 'none',
-              borderRadius: '8px 8px 0 0',
+              borderRadius: '8px',
               cursor: 'pointer',
               fontWeight: 'bold',
+              fontSize: '16px',
             }}
           >
             ✅ Completados ({pedidosCompletados.length})
           </button>
         </div>
 
-        {/* TABLA */}
+        {/* CARDS */}
         {mostrar.length > 0 ? (
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-              <thead>
-                <tr style={{ background: '#f5f5f5', borderBottom: '2px solid #ddd' }}>
-                  <th style={{ padding: '12px', textAlign: 'left', fontWeight: 'bold' }}>Código</th>
-                  <th style={{ padding: '12px', textAlign: 'left', fontWeight: 'bold' }}>Cliente</th>
-                  <th style={{ padding: '12px', textAlign: 'left', fontWeight: 'bold' }}>Total</th>
-                  <th style={{ padding: '12px', textAlign: 'left', fontWeight: 'bold' }}>Franja</th>
-                  <th style={{ padding: '12px', textAlign: 'left', fontWeight: 'bold' }}>Fecha</th>
-                  <th style={{ padding: '12px', textAlign: 'center', fontWeight: 'bold' }}>Acciones</th>
-                </tr>
-              </thead>
-              <tbody>
-                {mostrar.map(pedido => (
-                  <tr key={pedido.id} style={{ borderBottom: '1px solid #eee' }}>
-                    <td style={{ padding: '12px', fontWeight: 'bold', color: '#ff5c1a' }}>
-                      {pedido.codigo}
-                    </td>
-                    <td style={{ padding: '12px' }}>
-                      {pedido.usuario.split('@')[0]}
-                    </td>
-                    <td style={{ padding: '12px', fontWeight: 'bold' }}>
-                      {parseFloat(pedido.total).toFixed(2)}€
-                    </td>
-                    <td style={{ padding: '12px' }}>
-                      {pedido.franja_horaria}
-                    </td>
-                    <td style={{ padding: '12px', fontSize: '12px', color: '#666' }}>
+          <div style={{ display: 'grid', gap: '20px' }}>
+            {mostrar.map(pedido => (
+              <div
+                key={pedido.id}
+                style={{
+                  background: 'white',
+                  padding: '20px',
+                  borderRadius: '12px',
+                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                  borderLeft: `6px solid ${tab === 'pendientes' ? '#ff5c1a' : '#2ecc71'}`,
+                }}
+              >
+                {/* HEADER */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                  <div>
+                    <h3 style={{ margin: '0 0 5px 0', fontSize: '18px', fontWeight: 'bold' }}>
+                      Código: <span style={{ color: '#ff5c1a' }}>{pedido.codigo}</span>
+                    </h3>
+                    <p style={{ margin: 0, fontSize: '14px', color: '#666' }}>
+                      {pedido.usuario.split('@')[0]} • {pedido.franja_horaria}
+                    </p>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <p style={{ margin: '0 0 5px 0', fontSize: '12px', color: '#999' }}>
                       {new Date(pedido.fecha).toLocaleString()}
-                    </td>
-                    <td style={{ padding: '12px', textAlign: 'center' }}>
-                      {tab === 'pendientes' ? (
-                        <div style={{ display: 'flex', gap: '5px', justifyContent: 'center' }}>
-                          <button
-                            onClick={() => marcarPedido(pedido.id, 'completado')}
-                            style={{
-                              padding: '6px 12px',
-                              background: '#2ecc71',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '4px',
-                              cursor: 'pointer',
-                              fontSize: '12px',
-                            }}
-                          >
-                            ✓ Completar
-                          </button>
-                          <button
-                            onClick={() => marcarPedido(pedido.id, 'cancelado')}
-                            style={{
-                              padding: '6px 12px',
-                              background: '#e74c3c',
-                              color: 'white',
-                              border: 'none',
-                              borderRadius: '4px',
-                              cursor: 'pointer',
-                              fontSize: '12px',
-                            }}
-                          >
-                            ✗ Cancelar
-                          </button>
-                        </div>
-                      ) : (
-                        <span style={{ color: '#666', fontSize: '12px' }}>Finalizado</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    </p>
+                    <p style={{ margin: 0, fontSize: '24px', fontWeight: 'bold', color: '#ff5c1a' }}>
+                      {parseFloat(pedido.total).toFixed(2)}€
+                    </p>
+                  </div>
+                </div>
+
+                {/* PRODUCTOS */}
+                <div style={{ background: '#f9f9f9', padding: '12px', borderRadius: '8px', marginBottom: '15px' }}>
+                  <p style={{ margin: '0 0 8px 0', fontWeight: 'bold', fontSize: '14px' }}>Productos:</p>
+                  {Object.entries(pedido.items || {}).map(([id, qty]) => {
+                    const prod = products.find(p => String(p.id) === String(id));
+                    return (
+                      <p key={id} style={{ margin: '4px 0', fontSize: '13px', color: '#555' }}>
+                        • <strong>{qty}x</strong> {prod?.name || 'Producto'}
+                      </p>
+                    );
+                  })}
+                </div>
+
+                {/* BOTONES */}
+                {tab === 'pendientes' ? (
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    <button
+                      onClick={() => marcarPedido(pedido.id, 'completado')}
+                      style={{
+                        padding: '12px',
+                        background: '#2ecc71',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontWeight: 'bold',
+                        fontSize: '14px',
+                      }}
+                    >
+                      ✓ Completar
+                    </button>
+                    <button
+                      onClick={() => marcarPedido(pedido.id, 'cancelado')}
+                      style={{
+                        padding: '12px',
+                        background: '#e74c3c',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        fontWeight: 'bold',
+                        fontSize: '14px',
+                      }}
+                    >
+                      ✗ Cancelar
+                    </button>
+                  </div>
+                ) : (
+                  <div style={{ textAlign: 'center', padding: '12px', background: '#e8f5e9', borderRadius: '8px', color: '#2e7d32', fontWeight: 'bold' }}>
+                    ✅ Pedido Completado
+                  </div>
+                )}
+              </div>
+            ))}
           </div>
         ) : (
-          <div style={{ textAlign: 'center', padding: '40px', color: '#999' }}>
-            <p style={{ fontSize: '40px' }}>📭</p>
-            <p>No hay pedidos {tab === 'pendientes' ? 'pendientes' : 'completados'}</p>
+          <div style={{ textAlign: 'center', padding: '60px 20px', color: '#999' }}>
+            <p style={{ fontSize: '48px' }}>📭</p>
+            <p style={{ fontSize: '16px' }}>No hay pedidos {tab === 'pendientes' ? 'pendientes' : 'completados'}</p>
           </div>
         )}
       </div>

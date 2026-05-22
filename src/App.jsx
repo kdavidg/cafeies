@@ -728,7 +728,6 @@ const finalizarPedidoGestion = async (pedidoId, accion) => {
 )}
             </main>
             {currentView !== 'checkout' && 
-            currentView !== 'staff' && 
             currentView !== 'admin' && 
             currentView !== 'cart' && ( 
               <OrderPanel 
