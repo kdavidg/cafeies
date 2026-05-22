@@ -1,5 +1,7 @@
 import React from 'react';
 
+const ADMIN_EMAIL = 'davidgonzaga140@gmail.com';
+
 function SideBar({
   currentView,
   setCurrentView,
@@ -8,6 +10,8 @@ function SideBar({
   user,
   handleLogout,
 }) {
+  const esAdmin = user?.email === ADMIN_EMAIL;
+
   return (
     <nav className="app-sidebar">
       <span className="sidebar-section-label">Usuario</span>
@@ -33,7 +37,14 @@ function SideBar({
 
       <span className="sidebar-section-label">Personal</span>
 
-      <button className="nav-link" onClick={() => setCurrentView('admin')}>
+      {esAdmin && (
+        <button className="nav-link" onClick={() => setCurrentView('admin')}>
+          <span className="nav-link-icon">📊</span>
+          <span className="nav-link-text">Panel Admin</span>
+        </button>
+      )}
+
+      <button className="nav-link" onClick={() => setCurrentView('staff')}>
         <span className="nav-link-icon">👨‍🍳</span>
         <span className="nav-link-text">Panel cafetería</span>
       </button>
