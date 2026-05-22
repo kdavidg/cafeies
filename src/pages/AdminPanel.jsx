@@ -64,7 +64,7 @@ export default function AdminPanel({ user, products }) {
         <h2 className="content-title">📊 Panel Administrador</h2>
       </div>
 
-      <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
+      <div style={{ padding: '20px' }}>
         {/* TABS PRINCIPALES */}
         <div style={{ display: 'flex', gap: '10px', marginBottom: '30px', minHeight: '44px', alignItems: 'center' }}>
           <button
