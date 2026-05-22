@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import AdminProducts from './AdminProducts';
 
 const ADMIN_EMAIL = 'davidgonzaga140@gmail.com';
 
 export default function AdminPanel({ user, products }) {
   const [pedidos, setPedidos] = useState([]);
-  const [tab, setTab] = useState('pendientes');
+  const [tab, setTab] = useState('pedidos'); // 'pedidos' o 'productos'
+  const [subTab, setSubTab] = useState('pendientes'); // para pedidos
   const [loading, setLoading] = useState(true);
 
   const esAdmin = user?.email === ADMIN_EMAIL;
@@ -54,7 +56,7 @@ export default function AdminPanel({ user, products }) {
 
   const pedidosPendientes = pedidos.filter(p => p.estado === 'pendiente');
   const pedidosCompletados = pedidos.filter(p => p.estado === 'completado');
-  const mostrar = tab === 'pendientes' ? pedidosPendientes : pedidosCompletados;
+  const mostrar = subTab === 'pendientes' ? pedidosPendientes : pedidosCompletados;
 
   return (
     <section className="view active">
@@ -63,14 +65,14 @@ export default function AdminPanel({ user, products }) {
       </div>
 
       <div style={{ padding: '20px' }}>
-        {/* TABS */}
+        {/* TABS PRINCIPALES */}
         <div style={{ display: 'flex', gap: '10px', marginBottom: '30px' }}>
           <button
-            onClick={() => setTab('pendientes')}
+            onClick={() => { setTab('pedidos'); setSubTab('pendientes'); }}
             style={{
               padding: '12px 24px',
-              background: tab === 'pendientes' ? '#ff5c1a' : '#f0f0f0',
-              color: tab === 'pendientes' ? 'white' : '#333',
+              background: tab === 'pedidos' ? '#ff5c1a' : '#f0f0f0',
+              color: tab === 'pedidos' ? 'white' : '#333',
               border: 'none',
               borderRadius: '8px',
               cursor: 'pointer',
@@ -78,14 +80,14 @@ export default function AdminPanel({ user, products }) {
               fontSize: '16px',
             }}
           >
-            ⏳ Pendientes ({pedidosPendientes.length})
+            📋 Pedidos
           </button>
           <button
-            onClick={() => setTab('completados')}
+            onClick={() => setTab('productos')}
             style={{
               padding: '12px 24px',
-              background: tab === 'completados' ? '#2ecc71' : '#f0f0f0',
-              color: tab === 'completados' ? 'white' : '#333',
+              background: tab === 'productos' ? '#2ecc71' : '#f0f0f0',
+              color: tab === 'productos' ? 'white' : '#333',
               border: 'none',
               borderRadius: '8px',
               cursor: 'pointer',
@@ -93,104 +95,146 @@ export default function AdminPanel({ user, products }) {
               fontSize: '16px',
             }}
           >
-            ✅ Completados ({pedidosCompletados.length})
+            🍱 Productos
           </button>
         </div>
 
-        {/* CARDS */}
-        {mostrar.length > 0 ? (
-          <div style={{ display: 'grid', gap: '20px' }}>
-            {mostrar.map(pedido => (
-              <div
-                key={pedido.id}
+        {/* VISTA DE PEDIDOS */}
+        {tab === 'pedidos' && (
+          <>
+            {/* SUB-TABS PARA PEDIDOS */}
+            <div style={{ display: 'flex', gap: '10px', marginBottom: '20px' }}>
+              <button
+                onClick={() => setSubTab('pendientes')}
                 style={{
-                  background: 'white',
-                  padding: '20px',
-                  borderRadius: '12px',
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-                  borderLeft: `6px solid ${tab === 'pendientes' ? '#ff5c1a' : '#2ecc71'}`,
+                  padding: '10px 20px',
+                  background: subTab === 'pendientes' ? '#ff5c1a' : '#f0f0f0',
+                  color: subTab === 'pendientes' ? 'white' : '#333',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
                 }}
               >
-                {/* HEADER */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
-                  <div>
-                    <h3 style={{ margin: '0 0 5px 0', fontSize: '18px', fontWeight: 'bold' }}>
-                      Código: <span style={{ color: '#ff5c1a' }}>{pedido.codigo}</span>
-                    </h3>
-                    <p style={{ margin: 0, fontSize: '14px', color: '#666' }}>
-                      {pedido.usuario.split('@')[0]} • {pedido.franja_horaria}
-                    </p>
-                  </div>
-                  <div style={{ textAlign: 'right' }}>
-                    <p style={{ margin: '0 0 5px 0', fontSize: '12px', color: '#999' }}>
-                      {new Date(pedido.fecha).toLocaleString()}
-                    </p>
-                    <p style={{ margin: 0, fontSize: '24px', fontWeight: 'bold', color: '#ff5c1a' }}>
-                      {parseFloat(pedido.total).toFixed(2)}€
-                    </p>
-                  </div>
-                </div>
+                ⏳ Pendientes ({pedidosPendientes.length})
+              </button>
+              <button
+                onClick={() => setSubTab('completados')}
+                style={{
+                  padding: '10px 20px',
+                  background: subTab === 'completados' ? '#2ecc71' : '#f0f0f0',
+                  color: subTab === 'completados' ? 'white' : '#333',
+                  border: 'none',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  fontWeight: 'bold',
+                }}
+              >
+                ✅ Completados ({pedidosCompletados.length})
+              </button>
+            </div>
 
-                {/* PRODUCTOS */}
-                <div style={{ background: '#f9f9f9', padding: '12px', borderRadius: '8px', marginBottom: '15px' }}>
-                  <p style={{ margin: '0 0 8px 0', fontWeight: 'bold', fontSize: '14px' }}>Productos:</p>
-                  {Object.entries(pedido.items || {}).map(([id, qty]) => {
-                    const prod = products.find(p => String(p.id) === String(id));
-                    return (
-                      <p key={id} style={{ margin: '4px 0', fontSize: '13px', color: '#555' }}>
-                        • <strong>{qty}x</strong> {prod?.name || 'Producto'}
-                      </p>
-                    );
-                  })}
-                </div>
+            {/* CARDS DE PEDIDOS */}
+            {mostrar.length > 0 ? (
+              <div style={{ display: 'grid', gap: '20px' }}>
+                {mostrar.map(pedido => (
+                  <div
+                    key={pedido.id}
+                    style={{
+                      background: 'white',
+                      padding: '20px',
+                      borderRadius: '12px',
+                      boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+                      borderLeft: `6px solid ${subTab === 'pendientes' ? '#ff5c1a' : '#2ecc71'}`,
+                    }}
+                  >
+                    {/* HEADER */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+                      <div>
+                        <h3 style={{ margin: '0 0 5px 0', fontSize: '18px', fontWeight: 'bold' }}>
+                          Código: <span style={{ color: '#ff5c1a' }}>{pedido.codigo}</span>
+                        </h3>
+                        <p style={{ margin: 0, fontSize: '14px', color: '#666' }}>
+                          {pedido.usuario.split('@')[0]} • {pedido.franja_horaria}
+                        </p>
+                      </div>
+                      <div style={{ textAlign: 'right' }}>
+                        <p style={{ margin: '0 0 5px 0', fontSize: '12px', color: '#999' }}>
+                          {new Date(pedido.fecha).toLocaleString()}
+                        </p>
+                        <p style={{ margin: 0, fontSize: '24px', fontWeight: 'bold', color: '#ff5c1a' }}>
+                          {parseFloat(pedido.total).toFixed(2)}€
+                        </p>
+                      </div>
+                    </div>
 
-                {/* BOTONES */}
-                {tab === 'pendientes' ? (
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                    <button
-                      onClick={() => marcarPedido(pedido.id, 'completado')}
-                      style={{
-                        padding: '12px',
-                        background: '#2ecc71',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        fontWeight: 'bold',
-                        fontSize: '14px',
-                      }}
-                    >
-                      ✓ Completar
-                    </button>
-                    <button
-                      onClick={() => marcarPedido(pedido.id, 'cancelado')}
-                      style={{
-                        padding: '12px',
-                        background: '#e74c3c',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '8px',
-                        cursor: 'pointer',
-                        fontWeight: 'bold',
-                        fontSize: '14px',
-                      }}
-                    >
-                      ✗ Cancelar
-                    </button>
+                    {/* PRODUCTOS */}
+                    <div style={{ background: '#f9f9f9', padding: '12px', borderRadius: '8px', marginBottom: '15px' }}>
+                      <p style={{ margin: '0 0 8px 0', fontWeight: 'bold', fontSize: '14px' }}>Productos:</p>
+                      {Object.entries(pedido.items || {}).map(([id, qty]) => {
+                        const prod = products.find(p => String(p.id) === String(id));
+                        return (
+                          <p key={id} style={{ margin: '4px 0', fontSize: '13px', color: '#555' }}>
+                            • <strong>{qty}x</strong> {prod?.name || 'Producto'}
+                          </p>
+                        );
+                      })}
+                    </div>
+
+                    {/* BOTONES */}
+                    {subTab === 'pendientes' ? (
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                        <button
+                          onClick={() => marcarPedido(pedido.id, 'completado')}
+                          style={{
+                            padding: '12px',
+                            background: '#2ecc71',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            fontWeight: 'bold',
+                            fontSize: '14px',
+                          }}
+                        >
+                          ✓ Completar
+                        </button>
+                        <button
+                          onClick={() => marcarPedido(pedido.id, 'cancelado')}
+                          style={{
+                            padding: '12px',
+                            background: '#e74c3c',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '8px',
+                            cursor: 'pointer',
+                            fontWeight: 'bold',
+                            fontSize: '14px',
+                          }}
+                        >
+                          ✗ Cancelar
+                        </button>
+                      </div>
+                    ) : (
+                      <div style={{ textAlign: 'center', padding: '12px', background: '#e8f5e9', borderRadius: '8px', color: '#2e7d32', fontWeight: 'bold' }}>
+                        ✅ Pedido Completado
+                      </div>
+                    )}
                   </div>
-                ) : (
-                  <div style={{ textAlign: 'center', padding: '12px', background: '#e8f5e9', borderRadius: '8px', color: '#2e7d32', fontWeight: 'bold' }}>
-                    ✅ Pedido Completado
-                  </div>
-                )}
+                ))}
               </div>
-            ))}
-          </div>
-        ) : (
-          <div style={{ textAlign: 'center', padding: '60px 20px', color: '#999' }}>
-            <p style={{ fontSize: '48px' }}>📭</p>
-            <p style={{ fontSize: '16px' }}>No hay pedidos {tab === 'pendientes' ? 'pendientes' : 'completados'}</p>
-          </div>
+            ) : (
+              <div style={{ textAlign: 'center', padding: '60px 20px', color: '#999' }}>
+                <p style={{ fontSize: '48px' }}>📭</p>
+                <p style={{ fontSize: '16px' }}>No hay pedidos {subTab === 'pendientes' ? 'pendientes' : 'completados'}</p>
+              </div>
+            )}
+          </>
+        )}
+
+        {/* VISTA DE PRODUCTOS */}
+        {tab === 'productos' && (
+          <AdminProducts user={user} />
         )}
       </div>
     </section>
