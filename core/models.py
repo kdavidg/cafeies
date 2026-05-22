@@ -5,6 +5,8 @@ class Producto(models.Model):
     precio = models.DecimalField(max_digits=6, decimal_places=2)
     emoji = models.CharField(max_length=10, default='☕')
     categoria = models.CharField(max_length=50, default='bebidas')
+    descripcion = models.TextField(blank=True, default='')
+    stock = models.IntegerField(default=0)
 
 class Pedido(models.Model):
     usuario = models.CharField(max_length=100)
@@ -12,6 +14,7 @@ class Pedido(models.Model):
     fecha = models.DateTimeField(auto_now_add=True)
     franja_horaria = models.CharField(max_length=50) 
     items = models.JSONField()
+    codigo = models.CharField(max_length=8, unique=True, null=True, blank=True)
     ESTADOS = [
         ('pendiente', 'Pendiente'),
         ('completado', 'Completado'),
