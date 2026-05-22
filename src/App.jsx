@@ -572,7 +572,7 @@ const finalizarPedidoGestion = async (pedidoId, accion) => {
 
             {/*VISTA DE ADMIN */}
             {currentView === 'admin' && (
-              <AdminPanel user={user} />
+              <AdminPanel user={user} products={products} />
             )}
 
 
