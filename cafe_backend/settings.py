@@ -50,13 +50,21 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'cafe_backend.wsgi.application'
 
-DATABASES = {
-    'default': dj_database_url.config(
-        default='mysql://root:UVjnRajzpvaSPfkghRQdTKpgrzzWQhAS@mysql.railway.internal:3306/railway', 
-        conn_max_age=600,
-        ssl_require=False
-    )
-}
+if os.getenv('RAILWAY_ENVIRONMENT_NAME'):  # Si está en Railway
+    DATABASES = {
+        'default': dj_database_url.config(
+            default='mysql://root:UVjnRajzpvaSPfkghRQdTKpgrzzWQhAS@mysql.railway.internal:3306/railway', 
+            conn_max_age=600,
+            ssl_require=False
+        )
+    }
+else:  # Si está en local
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
 
 CORS_ALLOW_ALL_ORIGINS = True 
 
