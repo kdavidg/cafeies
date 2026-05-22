@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import AdminProducts from './AdminProducts';
+import AdminProducts from '../components/AdminProducts';
 
 const ADMIN_EMAIL = 'davidgonzaga140@gmail.com';
 
