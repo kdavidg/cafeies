@@ -673,7 +673,7 @@ const finalizarPedidoGestion = async (pedidoId, accion) => {
             }` 
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', alignItems: 'center' }}>
-              <span>Pedido #{String(pedido.id).slice(-5)}</span>
+              <span>Pedido #{pedido.codigo || String(pedido.id).slice(-5)}</span>
               <span style={{ 
                 fontSize: '11px', 
                 padding: '4px 8px', 
@@ -687,6 +687,9 @@ const finalizarPedidoGestion = async (pedidoId, accion) => {
                 {pedido.estado || 'en preparación'}
               </span>
             </div>
+            <div style={{ marginTop: '8px', padding: '10px', background: '#fff3e0', borderRadius: '8px', textAlign: 'center', fontWeight: 'bold', color: '#ff5c1a' }}>
+                Código de pedido: <span style={{ fontSize: '16px' }}>{pedido.codigo}</span>
+              </div>
 
             <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px' }}>
               <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0 }}>
