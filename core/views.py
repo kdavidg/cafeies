@@ -46,7 +46,11 @@ def crear_pedido(request):
                 items=items,
                 estado='pendiente'
             )
-            return JsonResponse({"status": "ok", "id": nuevo_pedido.id}, status=201)
+            return JsonResponse({
+                "status": "ok", 
+                "id": nuevo_pedido.id,
+                "codigo": nuevo_pedido.codigo
+            }, status=201)
         except Exception as e:
             return JsonResponse({"error": str(e)}, status=400)
         
