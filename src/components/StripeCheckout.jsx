@@ -53,24 +53,34 @@ export default function StripeCheckout({ total, franjaElegida, orderItems, user,
     }
   };
 
+  const CARD_ELEMENT_OPTIONS = {
+    style: {
+      base: {
+        color: '#32325d',
+        fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
+        fontSmoothing: 'antialiased',
+        fontSize: '16px',
+        '::placeholder': {
+          color: '#aab7c4',
+        },
+      },
+      invalid: {
+        color: '#fa755a',
+        iconColor: '#fa755a',
+      },
+    },
+    hidePostalCode: true,
+  };
+
   return (
     <form onSubmit={handlePay} style={{ marginBottom: '20px' }}>
-      <div style={{ background: 'white', padding: '20px', borderRadius: '12px', marginBottom: '15px' }}>
-        <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '10px' }}>
+      <div style={{ background: 'white', padding: '20px', borderRadius: '12px', marginBottom: '15px', border: '1px solid #ddd' }}>
+        <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '12px' }}>
           💳 Número de tarjeta
         </label>
-        <CardElement
-          options={{
-            style: {
-              base: {
-                fontSize: '16px',
-                color: '#424770',
-                '::placeholder': { color: '#aab7c4' }
-              },
-              invalid: { color: '#9e2146' }
-            }
-          }}
-        />
+        <div style={{ padding: '12px', border: '1px solid #ccc', borderRadius: '6px', background: '#fafafa' }}>
+          <CardElement options={CARD_ELEMENT_OPTIONS} />
+        </div>
       </div>
 
       {error && (
