@@ -159,3 +159,34 @@ def borrar_producto(request, pk):
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
     return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+
+import stripe
+import os
+
+stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
+
+@csrf_exempt
+def crear_pago_stripe(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            amount = int(float(data.get('total', 0)) * 100)  # Convertir a centavos
+            
+            # Crear intent de pago
+            intent = stripe.PaymentIntent.create(
+                amount=amount,
+                currency='eur',
+                metadata={
+                    'usuario': data.get('usuario'),
+                    'items': json.dumps(data.get('items', {})),
+                    'franja_horaria': data.get('franja_horaria')
+                }
+            )
+            
+            return JsonResponse({
+                'clientSecret': intent.client_secret
+            })
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+    return JsonResponse({'error': 'Método no permitido'}, status=405)

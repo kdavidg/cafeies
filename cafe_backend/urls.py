@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.urls import path
 
-from core.views import listar_productos, crear_pedido, listar_pedidos, gestionar_pedido, es_admin, crear_producto, editar_producto, borrar_producto
+from core.views import listar_productos, crear_pedido, listar_pedidos, gestionar_pedido, es_admin, crear_producto, editar_producto, borrar_producto, crear_pago_stripe
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -13,4 +13,5 @@ urlpatterns = [
     path('api/productos/crear/', crear_producto),
     path('api/productos/editar/<int:pk>/', editar_producto),
     path('api/productos/borrar/<int:pk>/', borrar_producto),
+    path('api/pagos/crear-intent/', crear_pago_stripe),
 ]
