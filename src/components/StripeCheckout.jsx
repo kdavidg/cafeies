@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
-import { PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import React, { useState, useEffect } from 'react';
+import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 
-export default function StripeCheckout({ total, franjaElegida, orderItems, user, products, onSuccess }) {
+function StripeForm({ onSuccess }) {
   const stripe = useStripe();
   const elements = useElements();
   const [loading, setLoading] = useState(false);
@@ -12,31 +12,11 @@ export default function StripeCheckout({ total, franjaElegida, orderItems, user,
     if (!stripe || !elements) return;
 
     setLoading(true);
-    setError(null);
 
     try {
-      // 1. Crear intent en el backend
-      const intentResponse = await fetch(
-        'https://backend-production-2b15.up.railway.app/api/pagos/crear-intent/',
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            total: total,
-            usuario: user?.email || 'anonimo@cafeies.com',
-            items: orderItems,
-            franja_horaria: franjaElegida
-          })
-        }
-      );
-
-      const { clientSecret } = await intentResponse.json();
-
-      // 2. Confirmar pago
       const result = await stripe.confirmPayment({
         elements,
-        clientSecret,
-        confirm: true,
+        redirect: 'if_required',
       });
 
       if (result.error) {
@@ -52,7 +32,7 @@ export default function StripeCheckout({ total, franjaElegida, orderItems, user,
   };
 
   return (
-    <form onSubmit={handlePay} style={{ marginBottom: '20px' }}>
+    <form onSubmit={handlePay}>
       <div style={{ background: 'white', padding: '20px', borderRadius: '12px', marginBottom: '15px', border: '1px solid #ddd' }}>
         <PaymentElement />
       </div>
@@ -65,7 +45,7 @@ export default function StripeCheckout({ total, franjaElegida, orderItems, user,
 
       <button
         type="submit"
-        disabled={loading || !stripe || !elements}
+        disabled={loading || !stripe}
         style={{
           width: '100%',
           padding: '16px',
@@ -78,8 +58,51 @@ export default function StripeCheckout({ total, franjaElegida, orderItems, user,
           fontSize: '16px',
         }}
       >
-        {loading ? 'Procesando...' : 'Confirmar y Pagar'}
+        {loading ? 'Procesando...' : `Confirmar y Pagar (${0}€)`}
       </button>
     </form>
+  );
+}
+
+export default function StripeCheckout({ total, franjaElegida, orderItems, user, products, stripePromise, onSuccess }) {
+  const [clientSecret, setClientSecret] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const createIntent = async () => {
+      try {
+        const response = await fetch(
+          'https://backend-production-2b15.up.railway.app/api/pagos/crear-intent/',
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              total: total,
+              usuario: user?.email || 'anonimo@cafeies.com',
+              items: orderItems,
+              franja_horaria: franjaElegida
+            })
+          }
+        );
+
+        const data = await response.json();
+        setClientSecret(data.clientSecret);
+      } catch (err) {
+        console.error('Error creating intent:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    createIntent();
+  }, [total, user, orderItems, franjaElegida]);
+
+  if (loading) return <div>Cargando...</div>;
+  if (!clientSecret) return <div>Error al cargar el formulario de pago</div>;
+
+  return (
+    <Elements stripe={stripePromise} options={{ clientSecret }}>
+      <StripeForm onSuccess={onSuccess} />
+    </Elements>
   );
 }

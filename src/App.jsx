@@ -373,18 +373,17 @@ const finalizarPedidoGestion = async (pedidoId, accion) => {
       <div className="checkout-methods">
         <h3 style={{ marginBottom: '20px' }}>💳 Método de Pago</h3>
         
-        <Elements stripe={stripePromise}>
-          <StripeCheckout 
-            total={orderTotal}
-            franjaElegida={franjaElegida}
-            orderItems={orderItems}
-            user={user}
-            products={products}
-            onSuccess={(paymentIntentId) => {
-              finalizarPedidoConPago(paymentIntentId);
-            }}
-          />
-        </Elements>
+        <StripeCheckout 
+          total={orderTotal}
+          franjaElegida={franjaElegida}
+          orderItems={orderItems}
+          user={user}
+          products={products}
+          stripePromise={stripePromise}
+          onSuccess={(paymentIntentId) => {
+            finalizarPedidoConPago(paymentIntentId);
+          }}
+        />
       </div>
 
       {/* Columna Derecha: Resumen */}
