@@ -72,7 +72,7 @@ useEffect(() => {
   }
 }, [currentView]);
 
-const stripePromise = window.Stripe('pk_test_51Tahy3Rwe5FWVGQyhAmDFvxaeR5vFiG4Ja2sjfnAA6bocTNIxfGXADfhJdMZBxmATHwFk9x0FWO8LR82qpFzIlCL00Y62Rrklm');
+const stripePromise = window.Stripe ? Promise.resolve(window.Stripe('pk_test_51Tahy3Rwe5FWVGQyhAmDFvxaeR5vFiG4Ja2sjfnAA6bocTNIxfGXADfhJdMZBxmATHwFk9x0FWO8LR82qpFzIlCL00Y62Rrklm')) : Promise.reject(new Error('Stripe failed to load'));
 
 
 const fetchPedidos = async () => {
