@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CardElement, useStripe, useElements } from '@stripe/react-stripe-js';
+import { PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js';
 
 export default function StripeCheckout({ total, franjaElegida, orderItems, user, products, onSuccess }) {
   const stripe = useStripe();
@@ -32,18 +32,16 @@ export default function StripeCheckout({ total, franjaElegida, orderItems, user,
 
       const { clientSecret } = await intentResponse.json();
 
-      // 2. Confirmar pago con la tarjeta
-      const result = await stripe.confirmCardPayment(clientSecret, {
-        payment_method: {
-          card: elements.getElement(CardElement),
-          billing_details: { name: user?.name || 'Usuario' }
-        }
+      // 2. Confirmar pago
+      const result = await stripe.confirmPayment({
+        elements,
+        clientSecret,
+        confirm: true,
       });
 
       if (result.error) {
         setError(result.error.message);
       } else if (result.paymentIntent.status === 'succeeded') {
-        // Pago exitoso
         onSuccess(result.paymentIntent.id);
       }
     } catch (err) {
@@ -53,34 +51,10 @@ export default function StripeCheckout({ total, franjaElegida, orderItems, user,
     }
   };
 
-  const CARD_ELEMENT_OPTIONS = {
-    style: {
-      base: {
-        color: '#32325d',
-        fontFamily: '"Helvetica Neue", Helvetica, Arial, sans-serif',
-        fontSmoothing: 'antialiased',
-        fontSize: '16px',
-        '::placeholder': {
-          color: '#aab7c4',
-        },
-      },
-      invalid: {
-        color: '#fa755a',
-        iconColor: '#fa755a',
-      },
-    },
-    hidePostalCode: true,
-  };
-
   return (
     <form onSubmit={handlePay} style={{ marginBottom: '20px' }}>
       <div style={{ background: 'white', padding: '20px', borderRadius: '12px', marginBottom: '15px', border: '1px solid #ddd' }}>
-        <label style={{ display: 'block', fontWeight: 'bold', marginBottom: '12px' }}>
-          💳 Número de tarjeta
-        </label>
-        <div style={{ padding: '12px', border: '1px solid #ccc', borderRadius: '6px', background: '#fafafa' }}>
-          <CardElement options={CARD_ELEMENT_OPTIONS} />
-        </div>
+        <PaymentElement />
       </div>
 
       {error && (
@@ -91,7 +65,7 @@ export default function StripeCheckout({ total, franjaElegida, orderItems, user,
 
       <button
         type="submit"
-        disabled={loading || !stripe}
+        disabled={loading || !stripe || !elements}
         style={{
           width: '100%',
           padding: '16px',
