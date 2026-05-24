@@ -7,6 +7,9 @@ import ProductCard from './components/ProductCard.jsx';
 import OrderPanel from './components/OrderPanel.jsx';
 import LoginForm from './components/Login.jsx';
 import AdminPanel from './pages/AdminPanel.jsx';
+import { loadStripe } from '@stripe/js';
+import { Elements } from '@stripe/react-stripe-js';
+import StripeCheckout from './components/StripeCheckout.jsx';
 
 import { TIME_SLOTS } from './data/timeSlots.js';
 import { USER } from './data/user.js';
@@ -69,6 +72,8 @@ useEffect(() => {
   }
 }, [currentView]);
 
+const stripePromise = loadStripe('pk_test_51Tahy3Rwe5FWVGQyhAmDFvxaeR5vFiG4Ja2sjfnAA6bocTNIxfGXADfhJdMZBxmATHwFk9x0FWO8LR82qpFzIlCL00Y62Rrklm');
+
 
 const fetchPedidos = async () => {
     try {
@@ -120,14 +125,14 @@ useEffect(() => {
   });
 };
 
-  const finalizarPedido = async () => {
+  const finalizarPedidoConPago = async (paymentIntentId) => {
   const pedidoParaEnviar = {
     usuario: user?.email || "usuario_anonimo@cafeies.com",
     items: orderItems,
     total: orderTotal,
     franja_horaria: franjaElegida,
     fecha: new Date().toISOString(),
-    nota: document.getElementById('order-note-input')?.value || ""
+    payment_intent_id: paymentIntentId
   };
 
   try {
@@ -138,27 +143,27 @@ useEffect(() => {
     });
 
     if (response.ok) {
-  const result = await response.json();
-  console.log("Respuesta de MySQL:", result);
-  
-  setLastOrder({
-    codigo: result.codigo || 'XXXX',
-    franja_horaria: franjaElegida,
-    items: orderItems,
-    total: orderTotal
-  });
-  
-  setOrderItems({});
-  fetchPedidos();
-  setCurrentView('confirmation');
-} else {
-  const errorData = await response.json();
-  alert("⚠️ " + (errorData.error || "Error al guardar"));
-}
-} catch (error) {
-  console.error("Error de conexión (CORS o Servidor apagado):", error);
-  alert("❌ No se pudo conectar con el servidor");
-}
+      const result = await response.json();
+      console.log("Pedido creado:", result);
+      
+      setLastOrder({
+        codigo: result.codigo || 'XXXX',
+        franja_horaria: franjaElegida,
+        items: orderItems,
+        total: orderTotal
+      });
+      
+      setOrderItems({});
+      fetchPedidos();
+      setCurrentView('confirmation');
+    } else {
+      const errorData = await response.json();
+      alert("⚠️ " + (errorData.error || "Error al guardar"));
+    }
+  } catch (error) {
+    console.error("Error de conexión:", error);
+    alert("❌ No se pudo conectar con el servidor");
+  }
 };
 
 const finalizarPedidoGestion = async (pedidoId, accion) => {
@@ -351,89 +356,42 @@ const finalizarPedidoGestion = async (pedidoId, accion) => {
                 </div>
               </section>
             )}
-            {/* VISTA DE PAGO (CHECKOUT) */}
-            {currentView === 'checkout' && (
-              <section className="view active">
-                <div className="content-header">
-                  <button className="btn-secondary" onClick={() => setCurrentView('menu')} style={{marginRight: '15px'}}>
-                    Volver
-                  </button>
-                  <h2 className="content-title">Finalizar Pedido</h2>
-                </div>
-    <div className="checkout-container" style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '30px', padding: '20px' }}>
+
+            {/* VISTA DE PAGO (CHECKOUT) CON STRIPE */}
+{currentView === 'checkout' && (
+  <section className="view active">
+    <div className="content-header">
+      <button className="btn-secondary" onClick={() => setCurrentView('menu')} style={{marginRight: '15px'}}>
+        Volver
+      </button>
+      <h2 className="content-title">Finalizar Pedido</h2>
+    </div>
+
+    <div className="checkout-container" style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '30px', padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
       
-      {/* Columna Izquierda: Métodos de Pago */}
+      {/* Columna Izquierda: Stripe */}
       <div className="checkout-methods">
-        <h3 style={{ marginBottom: '20px' }}>Método de pago</h3>
+        <h3 style={{ marginBottom: '20px' }}>💳 Método de Pago</h3>
         
-        <div className="payment-options" style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-          
-          {/*MONEDERO */}
-          <label className="payment-card" style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            padding: '20px', 
-            borderRadius: '15px', 
-            cursor: 'pointer',
-            transition: '0.3s',
-            border: metodoPago === 'monedero' ? '2px solid var(--orange)' : '1px solid var(--border)', 
-            background: metodoPago === 'monedero' ? 'var(--orange-light)' : 'white' 
-          }}>
-            <input 
-              type="radio" 
-              name="payment"
-              value="monedero"
-              checked={metodoPago === 'monedero'} 
-              onChange={(e) => setMetodoPago(e.target.value)} 
-              style={{ marginRight: '15px' }} 
-            />
-            <div>
-              <div style={{ fontWeight: 'bold' }}>💰 Monedero Virtual</div>
-              <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Saldo disponible: 14.50€</div>
-            </div>
-          </label>
-
-          {/*EFECTIVO*/}
-          <label className="payment-card" style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            padding: '20px', 
-            borderRadius: '15px', 
-            cursor: 'pointer',
-            transition: '0.3s',
-            border: metodoPago === 'efectivo' ? '2px solid var(--orange)' : '1px solid var(--border)', 
-            background: metodoPago === 'efectivo' ? 'var(--orange-light)' : 'white' 
-          }}>
-            <input 
-              type="radio" 
-              name="payment"
-              value="efectivo"
-              checked={metodoPago === 'efectivo'} 
-              onChange={(e) => setMetodoPago(e.target.value)} 
-              style={{ marginRight: '15px' }} 
-            />
-            <div>
-              <div style={{ fontWeight: 'bold' }}>💵 Efectivo en barra</div>
-              <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Paga al recoger tu pedido</div>
-            </div>
-          </label>
-        </div>
-
-        <div className="order-note" style={{ marginTop: '30px' }}>
-          <h3 style={{ marginBottom: '10px' }}>¿Alguna nota especial?</h3>
-          <textarea 
-            placeholder="Ej: Sin cebolla, alérgico a la lactosa..." 
-            style={{ width: '100%', padding: '15px', borderRadius: '12px', border: '1px solid var(--border)', fontFamily: 'inherit' }}
-            rows="3"
-            id="order-note-input"
-          ></textarea>
-        </div>
+        <Elements stripe={stripePromise}>
+          <StripeCheckout 
+            total={orderTotal}
+            franjaElegida={franjaElegida}
+            orderItems={orderItems}
+            user={user}
+            products={products}
+            onSuccess={(paymentIntentId) => {
+              finalizarPedidoConPago(paymentIntentId);
+            }}
+          />
+        </Elements>
       </div>
 
+      {/* Columna Derecha: Resumen */}
       <div className="checkout-summary" style={{ background: 'white', padding: '25px', borderRadius: '20px', border: '1px solid var(--border)', height: 'fit-content' }}>
         <h3 style={{ marginBottom: '20px' }}>Resumen</h3>
         <div style={{ background: '#fff3e0', padding: '12px', borderRadius: '8px', marginBottom: '15px', textAlign: 'center', fontWeight: 'bold', color: '#ff5c1a', fontSize: '14px' }}>
-          Franja Horaria {franjaElegida}
+          📍 {franjaElegida}
         </div>
         <div className="summary-items">
           {Object.entries(orderItems).map(([id, qty]) => {
@@ -451,15 +409,6 @@ const finalizarPedidoGestion = async (pedidoId, accion) => {
           <span>Total:</span>
           <span>{orderTotal.toFixed(2)}€</span>
         </div>
-
-        <button 
-          className="btn-primary" 
-          style={{ width: '100%', marginTop: '25px', padding: '15px', fontSize: '16px' }}
-          onClick={finalizarPedido} 
-          disabled={orderCount === 0}
-        >
-          Confirmar y Pagar
-        </button>
       </div>
     </div>
   </section>
