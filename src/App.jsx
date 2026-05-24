@@ -7,7 +7,7 @@ import ProductCard from './components/ProductCard.jsx';
 import OrderPanel from './components/OrderPanel.jsx';
 import LoginForm from './components/Login.jsx';
 import AdminPanel from './pages/AdminPanel.jsx';
-import { loadStripe } from '@stripe/js';
+
 import { Elements } from '@stripe/react-stripe-js';
 import StripeCheckout from './components/StripeCheckout.jsx';
 
@@ -72,7 +72,7 @@ useEffect(() => {
   }
 }, [currentView]);
 
-const stripePromise = loadStripe('pk_test_51Tahy3Rwe5FWVGQyhAmDFvxaeR5vFiG4Ja2sjfnAA6bocTNIxfGXADfhJdMZBxmATHwFk9x0FWO8LR82qpFzIlCL00Y62Rrklm');
+const stripePromise = window.Stripe('pk_test_51Tahy3Rwe5FWVGQyhAmDFvxaeR5vFiG4Ja2sjfnAA6bocTNIxfGXADfhJdMZBxmATHwFk9x0FWO8LR82qpFzIlCL00Y62Rrklm');
 
 
 const fetchPedidos = async () => {
