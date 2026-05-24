@@ -360,14 +360,14 @@ const finalizarPedidoGestion = async (pedidoId, accion) => {
             {/* VISTA DE PAGO (CHECKOUT) CON STRIPE */}
 {currentView === 'checkout' && (
   <section className="view active">
-    <div className="content-header">
+    <div className="content-header" style={{ marginBottom: '10px', paddingBottom: '5px' }}>
       <button className="btn-secondary" onClick={() => setCurrentView('menu')} style={{marginRight: '15px'}}>
         Volver
       </button>
       <h2 className="content-title">Finalizar Pedido</h2>
     </div>
 
-    <div className="checkout-container" style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '30px', padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
+    <div className="checkout-container" style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '20px', padding: '10px 20px', maxWidth: '1200px', margin: '0 auto', alignItems: 'start' }}>
       
       {/* Columna Izquierda: Stripe */}
       <div className="checkout-methods">
@@ -387,7 +387,7 @@ const finalizarPedidoGestion = async (pedidoId, accion) => {
       </div>
 
       {/* Columna Derecha: Resumen */}
-      <div className="checkout-summary" style={{ background: 'white', padding: '25px', borderRadius: '20px', border: '1px solid var(--border)', height: 'fit-content' }}>
+      <div className="checkout-summary" style={{ background: 'white', padding: '20px', borderRadius: '20px', border: '1px solid var(--border)', height: 'fit-content' }}>
         <h3 style={{ marginBottom: '20px' }}>Resumen</h3>
         <div style={{ background: '#fff3e0', padding: '12px', borderRadius: '8px', marginBottom: '15px', textAlign: 'center', fontWeight: 'bold', color: '#ff5c1a', fontSize: '14px' }}>
           📍 {franjaElegida}
@@ -574,37 +574,45 @@ const finalizarPedidoGestion = async (pedidoId, accion) => {
 
 {currentView === 'confirmation' && lastOrder && (
   <section className="view active" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '20px' }}>
-    <div style={{ textAlign: 'center', maxWidth: '500px', background: 'white', padding: '40px', borderRadius: '20px', boxShadow: '0 10px 40px rgba(0,0,0,0.1)' }}>
+    <div style={{ textAlign: 'center', maxWidth: '900px', width: '100%', background: 'white', padding: '40px', borderRadius: '20px', boxShadow: '0 10px 40px rgba(0,0,0,0.1)' }}>
       <div style={{ fontSize: '60px', marginBottom: '20px' }}>✅</div>
       <h1 style={{ fontSize: '32px', fontWeight: '900', marginBottom: '10px', color: '#333' }}>¡Pedido Enviado!</h1>
       <p style={{ fontSize: '16px', color: '#999', marginBottom: '40px' }}>Tu pedido ha sido registrado correctamente</p>
 
-      <div style={{ background: '#f9f9f9', padding: '30px', borderRadius: '15px', marginBottom: '30px', border: '2px solid #ff5c1a' }}>
-        <p style={{ fontSize: '12px', color: '#999', marginBottom: '10px', textTransform: 'uppercase', fontWeight: 'bold' }}>Tu código de pedido</p>
-        <div style={{ fontSize: '48px', fontWeight: '900', color: '#ff5c1a', letterSpacing: '8px', marginBottom: '20px', fontFamily: 'monospace' }}>
-          {lastOrder.codigo}
+      {/* LAYOUT HORIZONTAL: Código a la izquierda, datos a la derecha */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px', marginBottom: '40px', alignItems: 'start' }}>
+        
+        {/* CÓDIGO */}
+        <div style={{ background: '#f9f9f9', padding: '30px', borderRadius: '15px', border: '2px solid #ff5c1a' }}>
+          <p style={{ fontSize: '12px', color: '#999', marginBottom: '10px', textTransform: 'uppercase', fontWeight: 'bold' }}>Tu código de pedido</p>
+          <div style={{ fontSize: '48px', fontWeight: '900', color: '#ff5c1a', letterSpacing: '8px', marginBottom: '20px', fontFamily: 'monospace' }}>
+            {lastOrder.codigo}
+          </div>
+          <p style={{ fontSize: '14px', color: '#666', marginBottom: '0' }}>Usa este código para recoger tu pedido</p>
         </div>
-        <p style={{ fontSize: '14px', color: '#666', marginBottom: '20px' }}>Usa este código para recoger tu pedido</p>
-      </div>
 
-      <div style={{ textAlign: 'left', background: '#f9f9f9', padding: '20px', borderRadius: '12px', marginBottom: '30px' }}>
-        <p style={{ fontWeight: 'bold', marginBottom: '10px', color: '#333' }}>📍 Franja horaria</p>
-        <p style={{ fontSize: '18px', fontWeight: 'bold', color: '#ff5c1a', marginBottom: '20px' }}>{lastOrder.franja_horaria}</p>
+        {/* DATOS */}
+        <div style={{ textAlign: 'left' }}>
+          <p style={{ fontWeight: 'bold', marginBottom: '8px', color: '#333', fontSize: '14px' }}>📍 Franja horaria</p>
+          <p style={{ fontSize: '18px', fontWeight: 'bold', color: '#ff5c1a', marginBottom: '20px' }}>{lastOrder.franja_horaria}</p>
 
-        <p style={{ fontWeight: 'bold', marginBottom: '10px', color: '#333' }}>🛒 Productos</p>
-        {Object.entries(lastOrder.items).map(([id, qty]) => {
-          const prod = products.find(p => String(p.id) === String(id));
-          return (
-            <p key={id} style={{ fontSize: '14px', color: '#666', marginBottom: '5px' }}>
-              • <strong>{qty}x</strong> {prod?.name || 'Producto'}
+          <p style={{ fontWeight: 'bold', marginBottom: '8px', color: '#333', fontSize: '14px' }}>🛒 Productos</p>
+          <div style={{ marginBottom: '20px' }}>
+            {Object.entries(lastOrder.items).map(([id, qty]) => {
+              const prod = products.find(p => String(p.id) === String(id));
+              return (
+                <p key={id} style={{ fontSize: '14px', color: '#666', marginBottom: '5px' }}>
+                  • <strong>{qty}x</strong> {prod?.name || 'Producto'}
+                </p>
+              );
+            })}
+          </div>
+
+          <div style={{ borderTop: '1px solid #ddd', paddingTop: '15px' }}>
+            <p style={{ fontSize: '16px', fontWeight: 'bold', color: '#333', marginBottom: '0' }}>
+              Total: <span style={{ color: '#ff5c1a' }}>{parseFloat(lastOrder.total).toFixed(2)}€</span>
             </p>
-          );
-        })}
-
-        <div style={{ borderTop: '1px solid #ddd', paddingTop: '15px', marginTop: '15px' }}>
-          <p style={{ fontSize: '16px', fontWeight: 'bold', color: '#333' }}>
-            Total: <span style={{ color: '#ff5c1a' }}>{parseFloat(lastOrder.total).toFixed(2)}€</span>
-          </p>
+          </div>
         </div>
       </div>
 
@@ -634,7 +642,8 @@ const finalizarPedidoGestion = async (pedidoId, accion) => {
             </main>
             {currentView !== 'checkout' && 
             currentView !== 'admin' && 
-            currentView !== 'cart' && ( 
+            currentView !== 'cart' &&
+            currentView !== 'confirmation' && ( 
               <OrderPanel 
               orderItems={orderItems} 
               PRODUCTS={products} 
