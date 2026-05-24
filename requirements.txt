@@ -9,3 +9,4 @@ tzdata
 whitenoise
 gunicorn
 mysqlclient
+stripe==15.1.0
