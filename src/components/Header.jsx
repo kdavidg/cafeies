@@ -6,10 +6,21 @@ export default function Header({
   setSearchQuery, 
   favoritesCount, 
   orderCount, 
-  setCurrentView 
+  setCurrentView,
+  sidebarOpen,
+  setSidebarOpen
 }) {
   return (
     <header className="app-header">
+      {/* Hamburguesa en móvil */}
+      <button 
+        className="hamburger-menu"
+        onClick={() => setSidebarOpen(!sidebarOpen)}
+        title="Menú"
+      >
+        ☰
+      </button>
+
       <a className="header-logo" href="#" onClick={() => setCurrentView('menu')}>
         café<span>IES</span>
       </a>

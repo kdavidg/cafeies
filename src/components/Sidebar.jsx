@@ -9,11 +9,13 @@ function SideBar({
   orderCount,
   user,
   handleLogout,
+  sidebarOpen,
+  setSidebarOpen,
 }) {
   const esAdmin = user?.email === ADMIN_EMAIL;
 
   return (
-    <nav className="app-sidebar">
+    <nav className={`app-sidebar ${sidebarOpen ? 'open' : ''}`}>
       <span className="sidebar-section-label">Usuario</span>
 
       {/* MENÚ - aparece para todos */}

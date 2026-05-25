@@ -37,8 +37,9 @@ export default function CaféIES() {
   const [franjaElegida, setFranjaElegida] = useState('10:45');
   const [metodoPago, setMetodoPago] = useState('monedero');
   const [lastOrder, setLastOrder] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [favoritesCount, setFavoritesCount] = useState(0);
   
-
  useEffect(() => {
   const fetchProducts = async () => {
     try {
@@ -234,7 +235,7 @@ const finalizarPedidoGestion = async (pedidoId, accion) => {
             boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
           }}>
             <div style={{ 
-              background: '#ff5c1a', 
+              background: '#10B981', 
               width: '64px', 
               height: '64px', 
               borderRadius: '16px', 
@@ -245,11 +246,11 @@ const finalizarPedidoGestion = async (pedidoId, accion) => {
               fontSize: '18px',
               fontWeight: 'bold',
               color: 'white',
-              boxShadow: '0 8px 20px rgba(255, 92, 26, 0.3)'
+              boxShadow: '0 8px 20px rgba(26, 255, 167, 0.3)'
             }}>café</div>
 
             <h1 style={{ color: 'white', fontSize: '32px', marginBottom: '8px', fontWeight: '800', letterSpacing: '-0.5px' }}>
-              Bienvenido a <span style={{ color: '#ff5c1a' }}>CaféIES</span>
+              Bienvenido a <span style={{ color: '#10B981' }}>CaféIES</span>
             </h1>
             <p style={{ color: 'rgba(255,255,255,0.5)', marginBottom: '35px', fontSize: '15px' }}>Pide sin hacer cola</p>
             <div style={{ 
@@ -283,11 +284,13 @@ const finalizarPedidoGestion = async (pedidoId, accion) => {
         <>
           <Header 
             user={user} 
-            searchQuery={searchQuery} 
-            setSearchQuery={setSearchQuery} 
-            favoritesCount={favorites.size}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            favoritesCount={favoritesCount}
             orderCount={orderCount}
             setCurrentView={setCurrentView}
+            sidebarOpen={sidebarOpen}
+            setSidebarOpen={setSidebarOpen}
           />
 
           <div className="app-body">
@@ -299,7 +302,18 @@ const finalizarPedidoGestion = async (pedidoId, accion) => {
               user={user}
               handleLogout={handleLogout}
               onClick={() => setCurrentView('admin')}
+              sidebarOpen={sidebarOpen}
+              setSidebarOpen={setSidebarOpen}
             />
+
+            {/* Overlay para cerrar sidebar en móvil */}
+            {sidebarOpen && (
+              <div 
+                className="sidebar-overlay"
+                onClick={() => setSidebarOpen(false)}
+              />
+            )}
+
            <main className="app-main">
             {/* 1. VISTA DE MENÚ*/}
             {currentView === 'menu' && (
@@ -389,7 +403,7 @@ const finalizarPedidoGestion = async (pedidoId, accion) => {
       {/* Columna Derecha: Resumen */}
       <div className="checkout-summary" style={{ background: 'white', padding: '20px', borderRadius: '20px', border: '1px solid var(--border)', height: 'fit-content' }}>
         <h3 style={{ marginBottom: '20px' }}>Resumen</h3>
-        <div style={{ background: '#fff3e0', padding: '12px', borderRadius: '8px', marginBottom: '15px', textAlign: 'center', fontWeight: 'bold', color: '#ff5c1a', fontSize: '14px' }}>
+        <div style={{ background: '#fff3e0', padding: '12px', borderRadius: '8px', marginBottom: '15px', textAlign: 'center', fontWeight: 'bold', color: '#10B981', fontSize: '14px' }}>
           📍 {franjaElegida}
         </div>
         <div className="summary-items">
@@ -453,7 +467,7 @@ const finalizarPedidoGestion = async (pedidoId, accion) => {
           {currentView === 'cart' && (
             <section className="view active">
               <div className="content-header">
-                <h2 className="content-title">Tu Pedido Actual 🛒</h2>
+                <h2 className="content-title">Tu Pedido Actual</h2>
               </div>
               
               <div className="cart-container" style={{ padding: '20px' }}>
@@ -523,7 +537,7 @@ const finalizarPedidoGestion = async (pedidoId, accion) => {
             display: 'block',
             borderLeft: `6px solid ${
               pedido.estado === 'completado' ? '#2ecc71' : 
-              pedido.estado === 'cancelado' ? '#e74c3c' : '#ff5c1a'
+              pedido.estado === 'cancelado' ? '#e74c3c' : '#10B981'
             }` 
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', alignItems: 'center' }}>
@@ -541,7 +555,7 @@ const finalizarPedidoGestion = async (pedidoId, accion) => {
                 {pedido.estado || 'en preparación'}
               </span>
             </div>
-            <div style={{ marginTop: '8px', padding: '10px', background: '#fff3e0', borderRadius: '8px', textAlign: 'center', fontWeight: 'bold', color: '#ff5c1a' }}>
+            <div style={{ marginTop: '8px', padding: '10px', background: '#fff3e0', borderRadius: '8px', textAlign: 'center', fontWeight: 'bold', color: '#10B981' }}>
                 Código de pedido: <span style={{ fontSize: '16px' }}>{pedido.codigo}</span>
               </div>
 
@@ -583,9 +597,9 @@ const finalizarPedidoGestion = async (pedidoId, accion) => {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px', marginBottom: '40px', alignItems: 'start' }}>
         
         {/* CÓDIGO */}
-        <div style={{ background: '#f9f9f9', padding: '30px', borderRadius: '15px', border: '2px solid #ff5c1a' }}>
+        <div style={{ background: '#f9f9f9', padding: '30px', borderRadius: '15px', border: '2px solid #10B981' }}>
           <p style={{ fontSize: '12px', color: '#999', marginBottom: '10px', textTransform: 'uppercase', fontWeight: 'bold' }}>Tu código de pedido</p>
-          <div style={{ fontSize: '48px', fontWeight: '900', color: '#ff5c1a', letterSpacing: '8px', marginBottom: '20px', fontFamily: 'monospace' }}>
+          <div style={{ fontSize: '48px', fontWeight: '900', color: '#10B981', letterSpacing: '8px', marginBottom: '20px', fontFamily: 'monospace' }}>
             {lastOrder.codigo}
           </div>
           <p style={{ fontSize: '14px', color: '#666', marginBottom: '0' }}>Usa este código para recoger tu pedido</p>
@@ -594,7 +608,7 @@ const finalizarPedidoGestion = async (pedidoId, accion) => {
         {/* DATOS */}
         <div style={{ textAlign: 'left' }}>
           <p style={{ fontWeight: 'bold', marginBottom: '8px', color: '#333', fontSize: '14px' }}>📍 Franja horaria</p>
-          <p style={{ fontSize: '18px', fontWeight: 'bold', color: '#ff5c1a', marginBottom: '20px' }}>{lastOrder.franja_horaria}</p>
+          <p style={{ fontSize: '18px', fontWeight: 'bold', color: '#10B981', marginBottom: '20px' }}>{lastOrder.franja_horaria}</p>
 
           <p style={{ fontWeight: 'bold', marginBottom: '8px', color: '#333', fontSize: '14px' }}>🛒 Productos</p>
           <div style={{ marginBottom: '20px' }}>
@@ -610,7 +624,7 @@ const finalizarPedidoGestion = async (pedidoId, accion) => {
 
           <div style={{ borderTop: '1px solid #ddd', paddingTop: '15px' }}>
             <p style={{ fontSize: '16px', fontWeight: 'bold', color: '#333', marginBottom: '0' }}>
-              Total: <span style={{ color: '#ff5c1a' }}>{parseFloat(lastOrder.total).toFixed(2)}€</span>
+              Total: <span style={{ color: '#10B981' }}>{parseFloat(lastOrder.total).toFixed(2)}€</span>
             </p>
           </div>
         </div>
@@ -624,7 +638,7 @@ const finalizarPedidoGestion = async (pedidoId, accion) => {
         style={{
           width: '100%',
           padding: '16px',
-          background: '#ff5c1a',
+          background: '#10B981',
           color: 'white',
           border: 'none',
           borderRadius: '12px',

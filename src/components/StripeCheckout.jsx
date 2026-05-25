@@ -49,7 +49,7 @@ function StripeForm({ onSuccess }) {
         style={{
           width: '100%',
           padding: '16px',
-          background: loading ? '#ccc' : '#ff5c1a',
+          background: loading ? '#ccc' : '#10B981',
           color: 'white',
           border: 'none',
           borderRadius: '12px',
@@ -58,7 +58,7 @@ function StripeForm({ onSuccess }) {
           fontSize: '16px',
         }}
       >
-        {loading ? 'Procesando...' : `Confirmar y Pagar (${0}€)`}
+        {loading ? 'Procesando...' : `Confirmar y Pagar`}
       </button>
     </form>
   );
