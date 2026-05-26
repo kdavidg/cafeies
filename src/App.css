@@ -576,10 +576,23 @@ input { font-family: var(--font-sans); outline: none; }
   }
 }
 
-@media (max-width: 900px) {
+@media (max-width: 1024px) {
   .order-panel { display: none !important; }
   .products-grid { grid-template-columns: repeat(4, 1fr); gap: 15px; }
   .app-main { width: 100%; }
+}
+
+@media (max-width: 900px) {
+  .hamburger-menu {
+    display: block !important;
+  }
+
+  .app-sidebar {
+    display: none !important;
+  }
+
+  .header-search { display: none !important; }
+  .header-notice { display: none !important; }
 }
 
 @media (max-width: 768px) {
@@ -748,6 +761,23 @@ input { font-family: var(--font-sans); outline: none; }
   }
 }
 
+@media (max-width: 768px) {
+  .checkout-container {
+    grid-template-columns: 1fr !important;
+    gap: 15px !important;
+  }
+
+  .checkout-summary {
+    order: -1 !important;
+    width: 100% !important;
+  }
+
+  .checkout-methods {
+    order: 1 !important;
+    width: 100% !important;
+  }
+}
+
 .payment-card {
   background: white;
   border: 1px solid var(--border);
@@ -823,12 +853,130 @@ input { font-family: var(--font-sans); outline: none; }
   z-index: 249;
 }
 
+@media (max-width: 900px) {
+  .hamburger-menu {
+    display: block !important;
+  }
+
+  .app-sidebar {
+    display: block !important;
+    position: fixed;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    z-index: 300;
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+    width: var(--sidebar-w);
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    padding-top: var(--header-h);
+  }
+
+  .app-sidebar.open {
+    transform: translateX(0);
+  }
+
+  .sidebar-overlay {
+    display: block;
+  }
+
+  .header-search { display: none !important; }
+  .header-notice { display: none !important; }
+}
+
 @media (max-width: 768px) {
   .sidebar-overlay {
     display: block;
   }
   
   .app-sidebar {
-    z-index: 300;  /* Asegúrate que el sidebar esté ARRIBA */
+    z-index: 300;
+  }
+}
+
+
+/* ===== ESTILOS PARA FAVORITOS CENTRADOS ===== */
+
+.favorites-container {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Empty State - Centrado perfecto */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 60px 20px;
+  text-align: center;
+  grid-column: 1 / -1;
+}
+
+.empty-emoji {
+  font-size: 80px;
+  margin-bottom: 24px;
+  display: block;
+  line-height: 1;
+}
+
+.empty-title {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 12px;
+}
+
+.empty-text {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin-bottom: 24px;
+  max-width: 300px;
+}
+
+/* Grid de productos en Favoritos - Centrado responsivo */
+.favorites-container .products-grid {
+  width: 100%;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+/* Admin Panel Responsive */
+@media (max-width: 768px) {
+  .desktop-table {
+    display: none !important;
+  }
+
+  .mobile-cards {
+    display: grid !important;
+  }
+}
+
+@media (min-width: 769px) {
+  .desktop-table {
+    display: block !important;
+  }
+
+  .mobile-cards {
+    display: none !important;
+  }
+}
+
+.confirmation-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 30px;
+  margin-bottom: 40px;
+  align-items: start;
+}
+
+@media (max-width: 768px) {
+  .confirmation-grid {
+    grid-template-columns: 1fr;
   }
 }

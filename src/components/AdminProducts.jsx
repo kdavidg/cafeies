@@ -154,77 +154,162 @@ export default function AdminProducts({ user }) {
         </button>
       </div>
 
-      {/* TABLA DE PRODUCTOS */}
+      {/* TABLA DE PRODUCTOS - Desktop */}
       {productos.length > 0 ? (
-        <div style={{ overflowX: 'auto' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-            <thead>
-              <tr style={{ background: '#f5f5f5', borderBottom: '2px solid #ddd' }}>
-                <th style={{ padding: '12px', textAlign: 'left' }}>Emoji</th>
-                <th style={{ padding: '12px', textAlign: 'left' }}>Nombre</th>
-                <th style={{ padding: '12px', textAlign: 'left' }}>Precio</th>
-                <th style={{ padding: '12px', textAlign: 'left' }}>Stock</th>
-                <th style={{ padding: '12px', textAlign: 'left' }}>Categoría</th>
-                <th style={{ padding: '12px', textAlign: 'center' }}>Acciones</th>
-              </tr>
-            </thead>
-            <tbody>
-              {productos.map(producto => (
-                <tr key={producto.id} style={{ borderBottom: '1px solid #eee' }}>
-                  <td style={{ padding: '12px', fontSize: '20px' }}>{producto.emoji}</td>
-                  <td style={{ padding: '12px' }}>
-                    <div style={{ fontWeight: 'bold' }}>{producto.nombre}</div>
+        <>
+          {/* Vista Desktop - Tabla */}
+          <div style={{ display: 'none' }} className="desktop-table">
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <thead>
+                  <tr style={{ background: '#f5f5f5', borderBottom: '2px solid #ddd' }}>
+                    <th style={{ padding: '12px', textAlign: 'left' }}>Emoji</th>
+                    <th style={{ padding: '12px', textAlign: 'left' }}>Nombre</th>
+                    <th style={{ padding: '12px', textAlign: 'left' }}>Precio</th>
+                    <th style={{ padding: '12px', textAlign: 'left' }}>Stock</th>
+                    <th style={{ padding: '12px', textAlign: 'left' }}>Categoría</th>
+                    <th style={{ padding: '12px', textAlign: 'center' }}>Acciones</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {productos.map(producto => (
+                    <tr key={producto.id} style={{ borderBottom: '1px solid #eee' }}>
+                      <td style={{ padding: '12px', fontSize: '20px' }}>{producto.emoji}</td>
+                      <td style={{ padding: '12px' }}>
+                        <div style={{ fontWeight: 'bold' }}>{producto.nombre}</div>
+                        <div style={{ fontSize: '12px', color: '#666' }}>{producto.descripcion}</div>
+                      </td>
+                      <td style={{ padding: '12px', fontWeight: 'bold' }}>{producto.precio}€</td>
+                      <td style={{ padding: '12px' }}>
+                        <span style={{
+                          padding: '4px 8px',
+                          background: producto.stock > 0 ? '#e8f5e9' : '#ffebee',
+                          color: producto.stock > 0 ? '#2e7d32' : '#c62828',
+                          borderRadius: '4px',
+                          fontWeight: 'bold'
+                        }}>
+                          {producto.stock}
+                        </span>
+                      </td>
+                      <td style={{ padding: '12px' }}>{producto.categoria}</td>
+                      <td style={{ padding: '12px', textAlign: 'center' }}>
+                        <button
+                          onClick={() => abrirModalEditar(producto)}
+                          style={{
+                            padding: '6px 12px',
+                            background: '#ff5c1a',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            marginRight: '5px',
+                            fontSize: '12px',
+                          }}
+                        >
+                          ✏️ Editar
+                        </button>
+                        <button
+                          onClick={() => borrarProducto(producto.id)}
+                          style={{
+                            padding: '6px 12px',
+                            background: '#e74c3c',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '4px',
+                            cursor: 'pointer',
+                            fontSize: '12px',
+                          }}
+                        >
+                          🗑️ Borrar
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Vista Móvil - Cards */}
+          <div style={{ display: 'grid', gap: '15px' }} className="mobile-cards">
+            {productos.map(producto => (
+              <div key={producto.id} style={{ 
+                background: 'white', 
+                padding: '15px', 
+                borderRadius: '12px', 
+                border: '1px solid #eee',
+                boxShadow: '0 2px 8px rgba(0,0,0,0.05)'
+              }}>
+                <div style={{ display: 'flex', gap: '12px', marginBottom: '12px' }}>
+                  <span style={{ fontSize: '32px' }}>{producto.emoji}</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontWeight: 'bold', fontSize: '16px' }}>{producto.nombre}</div>
                     <div style={{ fontSize: '12px', color: '#666' }}>{producto.descripcion}</div>
-                  </td>
-                  <td style={{ padding: '12px', fontWeight: 'bold' }}>{producto.precio}€</td>
-                  <td style={{ padding: '12px' }}>
-                    <span style={{
+                  </div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '12px', fontSize: '14px' }}>
+                  <div>
+                    <span style={{ color: '#666', fontSize: '12px' }}>Precio</span>
+                    <div style={{ fontWeight: 'bold', fontSize: '18px', color: '#ff5c1a' }}>{producto.precio}€</div>
+                  </div>
+                  <div>
+                    <span style={{ color: '#666', fontSize: '12px' }}>Stock</span>
+                    <div style={{ 
+                      fontWeight: 'bold', 
+                      fontSize: '18px',
+                      color: producto.stock > 0 ? '#2e7d32' : '#c62828',
                       padding: '4px 8px',
                       background: producto.stock > 0 ? '#e8f5e9' : '#ffebee',
-                      color: producto.stock > 0 ? '#2e7d32' : '#c62828',
                       borderRadius: '4px',
-                      fontWeight: 'bold'
+                      textAlign: 'center'
                     }}>
                       {producto.stock}
-                    </span>
-                  </td>
-                  <td style={{ padding: '12px' }}>{producto.categoria}</td>
-                  <td style={{ padding: '12px', textAlign: 'center' }}>
-                    <button
-                      onClick={() => abrirModalEditar(producto)}
-                      style={{
-                        padding: '6px 12px',
-                        background: '#ff5c1a',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        marginRight: '5px',
-                        fontSize: '12px',
-                      }}
-                    >
-                      ✏️ Editar
-                    </button>
-                    <button
-                      onClick={() => borrarProducto(producto.id)}
-                      style={{
-                        padding: '6px 12px',
-                        background: '#e74c3c',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '4px',
-                        cursor: 'pointer',
-                        fontSize: '12px',
-                      }}
-                    >
-                      🗑️ Borrar
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div style={{ marginBottom: '12px', fontSize: '14px' }}>
+                  <span style={{ color: '#666', fontSize: '12px' }}>Categoría</span>
+                  <div style={{ fontWeight: '600' }}>{producto.categoria}</div>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                  <button
+                    onClick={() => abrirModalEditar(producto)}
+                    style={{
+                      padding: '10px 12px',
+                      background: '#ff5c1a',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontWeight: 'bold',
+                      fontSize: '14px',
+                    }}
+                  >
+                    ✏️ Editar
+                  </button>
+                  <button
+                    onClick={() => borrarProducto(producto.id)}
+                    style={{
+                      padding: '10px 12px',
+                      background: '#e74c3c',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      fontWeight: 'bold',
+                      fontSize: '14px',
+                    }}
+                  >
+                    🗑️ Borrar
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
       ) : (
         <div style={{ textAlign: 'center', padding: '60px 20px', color: '#999' }}>
           <p style={{ fontSize: '40px' }}>📦</p>

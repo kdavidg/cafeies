@@ -39,6 +39,7 @@ export default function CaféIES() {
   const [lastOrder, setLastOrder] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [favoritesCount, setFavoritesCount] = useState(0);
+  const [historialFilter, setHistorialFilter] = useState('todos');
   
  useEffect(() => {
   const fetchProducts = async () => {
@@ -381,11 +382,11 @@ const finalizarPedidoGestion = async (pedidoId, accion) => {
       <h2 className="content-title">Finalizar Pedido</h2>
     </div>
 
-    <div className="checkout-container" style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '20px', padding: '10px 20px', maxWidth: '1200px', margin: '0 auto', alignItems: 'start' }}>
+    <div className="checkout-container" style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '20px', padding: '10px 20px', maxWidth: '1200px', margin: '0 auto', alignItems: 'start', '@media (max-width: 768px)': { gridTemplateColumns: '1fr' } }}>
       
       {/* Columna Izquierda: Stripe */}
       <div className="checkout-methods">
-        <h3 style={{ marginBottom: '20px' }}>💳 Método de Pago</h3>
+        <h3 style={{ marginBottom: '20px' }}>Pago con tarjeta</h3>
         
         <StripeCheckout 
           total={orderTotal}
@@ -438,26 +439,37 @@ const finalizarPedidoGestion = async (pedidoId, accion) => {
             {/*VISTA DE FAVORITOS */}
             {currentView === 'favs' && (
               <section className="view active">
-                <div className="content-header">
-                  <h2 className="content-title">Mis Favoritos ⭐</h2>
-                </div>
-                <div className="products-grid">
-                  {products.filter(p => favorites.has(p.id)).length > 0 ? (
-                    products.filter(p => favorites.has(p.id)).map(product => (
-                      <ProductCard 
-                        key={product.id}
-                        product={product}
-                        isFavorite={true}
-                        onToggleFav={toggleFav}
-                        quantity={orderItems[product.id] || 0}
-                        onChangeQty={changeQty}
-                      />
-                    ))
-                  ) : (
-                    <p style={{padding: '40px', textAlign: 'center', color: 'var(--text-muted)'}}>
-                      Aún no tienes productos favoritos.
-                    </p>
-                  )}
+                <div className="favorites-container">
+                  <div className="content-header">
+                    <h2 className="content-title">Mis Favoritos</h2>
+                  </div>
+                  <div className="products-grid" style={products.filter(p => favorites.has(p.id)).length === 0 ? {justifyContent: 'center', width: '100%'} : {}}>
+                    {products.filter(p => favorites.has(p.id)).length > 0 ? (
+                      products.filter(p => favorites.has(p.id)).map(product => (
+                        <ProductCard 
+                          key={product.id}
+                          product={product}
+                          isFavorite={true}
+                          onToggleFav={toggleFav}
+                          quantity={orderItems[product.id] || 0}
+                          onChangeQty={changeQty}
+                        />
+                      ))
+                    ) : (
+                      <div className="empty-state">
+                        
+                        <h3 className="empty-title">Aún no tienes productos favoritos</h3>
+                        <p className="empty-text">Marca tus productos favoritos para verlos aquí</p>
+                        <button 
+                          className="btn-secondary" 
+                          onClick={() => setCurrentView('menu')}
+                          style={{ marginTop: '20px' }}
+                        >
+                          Ir al menú
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </section>
             )}
@@ -470,44 +482,46 @@ const finalizarPedidoGestion = async (pedidoId, accion) => {
                 <h2 className="content-title">Tu Pedido Actual</h2>
               </div>
               
-              <div className="cart-container" style={{ padding: '20px' }}>
+              <div className="cart-container" style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', width: '100%' }}>
                 {Object.keys(orderItems).length > 0 ? (
                   <div style={{ background: 'white', padding: '25px', borderRadius: '20px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
                     {Object.entries(orderItems).map(([id, qty]) => {
                       const product = products.find(p => String(p.id) === String(id));
             return (
-              <div key={id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px', paddingBottom: '15px', borderBottom: '1px solid #eee' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                  <span style={{ fontSize: '24px' }}>{product?.emoji}</span>
-                  <div>
-                    <div style={{ fontWeight: 'bold' }}>{product?.name}</div>
-                    <div style={{ fontSize: '12px', color: '#666' }}>{product?.price.toFixed(2)}€ / ud.</div>
-                  </div>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                  <button onClick={() => changeQty(id, -1)} className="btn-qty">-</button>
-                  <span style={{ fontWeight: 'bold' }}>{qty}</span>
-                  <button onClick={() => changeQty(id, 1)} className="btn-qty">+</button>
-                  <span style={{ marginLeft: '15px', fontWeight: '900', width: '60px', textAlign: 'right' }}>
-                    {(product?.price * qty).toFixed(2)}€
-                  </span>
-                </div>
-              </div>
+              <div key={id} style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '15px', paddingBottom: '15px', borderBottom: '1px solid #eee' }}>
+  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+      <span style={{ fontSize: '24px' }}>{product?.emoji}</span>
+      <div>
+        <div style={{ fontWeight: 'bold', fontSize: '14px' }}>{product?.name}</div>
+        <div style={{ fontSize: '12px', color: '#666' }}>{product?.price.toFixed(2)}€ / ud.</div>
+      </div>
+    </div>
+    <span style={{ fontWeight: '900', minWidth: '50px', textAlign: 'right' }}>
+      {(product?.price * qty).toFixed(2)}€
+    </span>
+  </div>
+  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>
+    <button onClick={() => changeQty(id, -1)} className="btn-qty">-</button>
+    <span style={{ fontWeight: 'bold', minWidth: '30px', textAlign: 'center' }}>{qty}</span>
+    <button onClick={() => changeQty(id, 1)} className="btn-qty">+</button>
+  </div>
+</div>
             );
           })}
           
-          <div style={{ marginTop: '30px', textAlign: 'right' }}>
-            <div style={{ fontSize: '20px', marginBottom: '20px' }}>
-              Total: <span style={{ color: '#ff5c1a', fontWeight: '900' }}>{orderTotal.toFixed(2)}€</span>
-            </div>
-            <button 
-              className="btn-primary" 
-              style={{ padding: '15px 40px' }}
-              onClick={() => setCurrentView('checkout')}
-            >
-              Ir a Pagar
-            </button>
+                  <div style={{ marginTop: '30px', textAlign: 'center' }}>
+          <div style={{ fontSize: '20px', marginBottom: '20px' }}>
+            Total: <span style={{ color: '#ff5c1a', fontWeight: '900' }}>{orderTotal.toFixed(2)}€</span>
           </div>
+          <button 
+            className="btn-primary" 
+            style={{ padding: '15px 40px' }}
+            onClick={() => setCurrentView('checkout')}
+          >
+            Ir a Pagar
+          </button>
+        </div>
         </div>
       ) : (
         <div style={{ textAlign: 'center', padding: '60px' }}>
@@ -524,13 +538,66 @@ const finalizarPedidoGestion = async (pedidoId, accion) => {
       {currentView === 'history' && (
       <section className="view active">
         <div className="content-header">
-          <h2 className="content-title">Historial de Pedidos 📋</h2>
+          <h2 className="content-title">Historial de Pedidos</h2>
         </div>
+
+        {/* BOTONES DE FILTRO */}
+        <div style={{ padding: '20px', display: 'flex', gap: '10px', justifyContent: 'center', marginBottom: '10px' }}>
+          <button
+            onClick={() => setHistorialFilter('todos')}
+            style={{
+              padding: '10px 20px',
+              background: !historialFilter || historialFilter === 'todos' ? '#10B981' : '#f0f0f0',
+              color: !historialFilter || historialFilter === 'todos' ? 'white' : '#333',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+            }}
+          >
+            Todos
+          </button>
+          <button
+            onClick={() => setHistorialFilter('pendientes')}
+            style={{
+              padding: '10px 20px',
+              background: historialFilter === 'pendientes' ? '#ff9800' : '#f0f0f0',
+              color: historialFilter === 'pendientes' ? 'white' : '#333',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+            }}
+          >
+            ⏳ Pendientes
+          </button>
+          <button
+            onClick={() => setHistorialFilter('completados')}
+            style={{
+              padding: '10px 20px',
+              background: historialFilter === 'completados' ? '#2ecc71' : '#f0f0f0',
+              color: historialFilter === 'completados' ? 'white' : '#333',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+            }}
+          >
+            ✅ Completados
+          </button>
+        </div>
+
         <div className="pedidos-list" style={{ padding: '20px' }}>
           {pedidos.filter(p => p.usuario === user.email).length > 0 ? (
             pedidos
               .filter(p => p.usuario === user.email)
-              .reverse()
+              .filter(p => {
+                if (!historialFilter || historialFilter === 'todos') return true;
+                if (historialFilter === 'pendientes') return p.estado === 'pendiente';
+                if (historialFilter === 'completados') return p.estado === 'completado';
+                return true;
+              })
+              .sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
               .map((pedido) => (
           <div key={pedido.id} className="payment-card" style={{ 
             marginBottom: '15px', 
@@ -594,7 +661,7 @@ const finalizarPedidoGestion = async (pedidoId, accion) => {
       <p style={{ fontSize: '16px', color: '#999', marginBottom: '40px' }}>Tu pedido ha sido registrado correctamente</p>
 
       {/* LAYOUT HORIZONTAL: Código a la izquierda, datos a la derecha */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '30px', marginBottom: '40px', alignItems: 'start' }}>
+      <div className="confirmation-grid">
         
         {/* CÓDIGO */}
         <div style={{ background: '#f9f9f9', padding: '30px', borderRadius: '15px', border: '2px solid #10B981' }}>
