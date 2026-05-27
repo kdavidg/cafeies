@@ -33,13 +33,13 @@ export default function CaféIES() {
   const [products, setProducts] = useState([]); 
   const [loading, setLoading] = useState(true);
   const [pedidos, setPedidos] = useState([]);
-  const franjasDisponibles = ["09:00 - 10:00", "10:00 - 11:00", "11:00 - 12:00", "12:00 - 13:00"];
-  const [franjaElegida, setFranjaElegida] = useState('10:45');
+  const [franjaElegida, setFranjaElegida] = useState('');
   const [metodoPago, setMetodoPago] = useState('monedero');
   const [lastOrder, setLastOrder] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [favoritesCount, setFavoritesCount] = useState(0);
   const [historialFilter, setHistorialFilter] = useState('todos');
+  const [franjas, setFranjas] = useState([]);
   
  useEffect(() => {
   const fetchProducts = async () => {
@@ -65,6 +65,20 @@ export default function CaféIES() {
   };
 
   fetchProducts();
+}, []);
+
+useEffect(() => {
+  const fetchFranjas = async () => {
+    try {
+      const response = await fetch('https://backend-production-2b15.up.railway.app/api/franjas-horarias/');
+      const data = await response.json();
+      // data es un array de {id, hora_inicio, hora_fin, activa, max_pedidos}
+      setFranjas(data);
+    } catch (error) {
+      console.error("Error cargando franjas:", error);
+    }
+  };
+  fetchFranjas();
 }, []);
 
 
@@ -132,7 +146,7 @@ useEffect(() => {
     usuario: user?.email || "usuario_anonimo@cafeies.com",
     items: orderItems,
     total: orderTotal,
-    franja_horaria: franjaElegida,
+    franja_horaria_id: parseInt(franjaElegida),
     fecha: new Date().toISOString(),
     payment_intent_id: paymentIntentId
   };
