@@ -141,7 +141,12 @@ useEffect(() => {
   });
 };
 
-  const finalizarPedidoConPago = async (paymentIntentId) => {
+const finalizarPedidoConPago = async (paymentIntentId) => {
+  if (!franjaElegida) {
+    alert("⚠️ Debes seleccionar una franja horaria");
+    return;
+  }
+
   const pedidoParaEnviar = {
     usuario: user?.email || "usuario_anonimo@cafeies.com",
     items: orderItems,
@@ -150,6 +155,8 @@ useEffect(() => {
     fecha: new Date().toISOString(),
     payment_intent_id: paymentIntentId
   };
+
+  
 
   try {
     const response = await fetch('https://backend-production-2b15.up.railway.app/api/pedidos/crear/', {
