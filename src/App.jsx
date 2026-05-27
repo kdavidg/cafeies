@@ -33,7 +33,7 @@ export default function CaféIES() {
   const [products, setProducts] = useState([]); 
   const [loading, setLoading] = useState(true);
   const [pedidos, setPedidos] = useState([]);
-  const [franjaElegida, setFranjaElegida] = useState('');
+  const [franjaElegida, setFranjaElegida] = useState(null);
   const [metodoPago, setMetodoPago] = useState('monedero');
   const [lastOrder, setLastOrder] = useState(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -349,15 +349,14 @@ const finalizarPedidoGestion = async (pedidoId, accion) => {
               <div className="time-slots-wrapper">
                 <span className="slots-label">SELECCIONA HORA DE RECOGIDA:</span>
                 <div className="time-slots-container">
-                  {TIME_SLOTS.map(slot => (
+                  {franjas.map(franja => (
                     <button 
-                      key={slot.time} 
-                      className={`time-chip ${franjaElegida === slot.time ? 'active' : ''}`}
-                      onClick={() => setFranjaElegida(slot.time)}
-                      style={franjaElegida === slot.time ? {backgroundColor: 'var(--orange)', color: 'white'} : {}}
+                      key={franja.id} 
+                      className={`time-chip ${franjaElegida === franja.id ? 'active' : ''}`}
+                      onClick={() => setFranjaElegida(franja.id)}
+                      style={franjaElegida === franja.id ? {backgroundColor: 'var(--orange)', color: 'white'} : {}}
                     >
-                      <span className="time-value">{slot.time}</span>
-                      <span className="time-label">{slot.label}</span>
+                      <span className="time-value">{franja.hora_inicio.slice(0, 5)} - {franja.hora_fin.slice(0, 5)}</span>
                     </button>
                   ))}
                 </div>
