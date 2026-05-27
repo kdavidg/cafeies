@@ -23,27 +23,12 @@ def listar_productos(request):
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
 
-from .models import Producto, Pedido, Usuario, FranjasHorarias
-
 @csrf_exempt
 def crear_pedido(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
             items = data.get('items', {})
-            email_usuario = data.get('usuario')
-            franja_id = data.get('franja_horaria_id')
-            
-            # Obtener o crear usuario
-            usuario, created = Usuario.objects.get_or_create(
-                email=email_usuario,
-                defaults={'nombre': email_usuario.split('@')[0]}
-            )
-            
-            # Obtener franja horaria
-            franja = None
-            if franja_id:
-                franja = get_object_or_404(FranjasHorarias, pk=franja_id)
             
             # Validar stock disponible
             for producto_id, cantidad in items.items():
@@ -55,9 +40,9 @@ def crear_pedido(request):
             
             # Si hay stock, crear pedido
             nuevo_pedido = Pedido.objects.create(
-                usuario=usuario,
+                usuario=data.get('usuario'),
                 total=data.get('total'),
-                franja_horaria=franja,
+                franja_horaria=data.get('franja_horaria'),
                 items=items,
                 estado='pendiente'
             )
@@ -77,9 +62,9 @@ def listar_pedidos(request):
         for p in pedidos:
             lista_final.append({
                 "id": str(p.id),
-                "usuario": p.usuario.email,
+                "usuario": p.usuario,
                 "total": float(p.total),
-                "franja_horaria": str(p.franja_horaria) if p.franja_horaria else None,
+                "franja_horaria": p.franja_horaria,
                 "fecha": p.fecha.isoformat(),
                 "items": p.items,
                 "estado": p.estado,
@@ -88,7 +73,6 @@ def listar_pedidos(request):
         return JsonResponse(lista_final, safe=False)
     except Exception as e:
         return JsonResponse({"error": "Error interno", "detalle": str(e)}, status=500)
-    
     
 @csrf_exempt
 def gestionar_pedido(request, pk):
@@ -206,79 +190,3 @@ def crear_pago_stripe(request):
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
     return JsonResponse({'error': 'Método no permitido'}, status=405)
-
-def listar_franjas_horarias(request):
-    """Lista todas las franjas horarias activas"""
-    try:
-        franjas = FranjasHorarias.objects.filter(activa=True).order_by('hora_inicio')
-        lista_final = []
-        for f in franjas:
-            lista_final.append({
-                "id": f.id,
-                "hora_inicio": str(f.hora_inicio),
-                "hora_fin": str(f.hora_fin),
-                "activa": f.activa,
-                "max_pedidos": f.max_pedidos
-            })
-        return JsonResponse(lista_final, safe=False)
-    except Exception as e:
-        return JsonResponse({"error": str(e)}, status=500)
-
-
-@csrf_exempt
-def obtener_usuario(request):
-    """Obtiene o crea el usuario y retorna sus favoritos"""
-    if request.method == 'GET':
-        email = request.GET.get('email', '')
-        if not email:
-            return JsonResponse({"error": "Email requerido"}, status=400)
-        
-        try:
-            usuario, created = Usuario.objects.get_or_create(
-                email=email,
-                defaults={'nombre': email.split('@')[0]}
-            )
-            
-            favoritos = list(usuario.productos_favoritos.values_list('id', flat=True))
-            
-            return JsonResponse({
-                "id": usuario.id,
-                "email": usuario.email,
-                "nombre": usuario.nombre,
-                "telefono": usuario.telefono,
-                "es_admin": usuario.es_admin,
-                "favoritos": favoritos
-            })
-        except Exception as e:
-            return JsonResponse({"error": str(e)}, status=400)
-    
-    return JsonResponse({"error": "Método no permitido"}, status=405)
-
-
-@csrf_exempt
-def actualizar_favoritos(request):
-    """Agrega o quita un producto de favoritos del usuario"""
-    if request.method == 'POST':
-        try:
-            data = json.loads(request.body)
-            email = data.get('email')
-            producto_id = data.get('producto_id')
-            agregar = data.get('agregar', True)  # True para agregar, False para quitar
-            
-            usuario = get_object_or_404(Usuario, email=email)
-            producto = get_object_or_404(Producto, pk=producto_id)
-            
-            if agregar:
-                usuario.productos_favoritos.add(producto)
-            else:
-                usuario.productos_favoritos.remove(producto)
-            
-            favoritos = list(usuario.productos_favoritos.values_list('id', flat=True))
-            return JsonResponse({
-                "status": "ok",
-                "favoritos": favoritos
-            })
-        except Exception as e:
-            return JsonResponse({"error": str(e)}, status=400)
-    
-    return JsonResponse({"error": "Método no permitido"}, status=405)
