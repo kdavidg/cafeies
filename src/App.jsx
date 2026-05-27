@@ -425,7 +425,7 @@ const finalizarPedidoGestion = async (pedidoId, accion) => {
       <div className="checkout-summary" style={{ background: 'white', padding: '20px', borderRadius: '20px', border: '1px solid var(--border)', height: 'fit-content' }}>
         <h3 style={{ marginBottom: '20px' }}>Resumen</h3>
         <div style={{ background: '#fff3e0', padding: '12px', borderRadius: '8px', marginBottom: '15px', textAlign: 'center', fontWeight: 'bold', color: '#10B981', fontSize: '14px' }}>
-          📍 {franjas.find(f => f.id === franjaElegida) ? `${franjas.find(f => f.id === franjaElegida).hora_inicio} - ${franjas.find(f => f.id === franjaElegida).hora_fin}` : 'Selecciona franja'}
+          📍 {franjas.find(f => f.id === franjaElegida) ? `${franjas.find(f => f.id === franjaElegida).hora_inicio.slice(0, 5)} - ${franjas.find(f => f.id === franjaElegida).hora_fin.slice(0, 5)}` : 'Selecciona franja'}
         </div>
         <div className="summary-items">
           {Object.entries(orderItems).map(([id, qty]) => {
@@ -697,7 +697,7 @@ const finalizarPedidoGestion = async (pedidoId, accion) => {
           <p style={{ fontWeight: 'bold', marginBottom: '8px', color: '#333', fontSize: '14px' }}>📍 Franja horaria</p>
           <p style={{ fontSize: '18px', fontWeight: 'bold', color: '#10B981', marginBottom: '20px' }}>
             {franjas.find(f => f.id === lastOrder.franja_horaria) 
-              ? `${franjas.find(f => f.id === lastOrder.franja_horaria).hora_inicio} - ${franjas.find(f => f.id === lastOrder.franja_horaria).hora_fin}` 
+              ? `${franjas.find(f => f.id === lastOrder.franja_horaria).hora_inicio.slice(0, 5)} - ${franjas.find(f => f.id === lastOrder.franja_horaria).hora_fin.slice(0, 5)}` 
               : 'N/A'}
           </p>
 
