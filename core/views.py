@@ -191,4 +191,3 @@ def crear_pago_stripe(request):
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
     return JsonResponse({'error': 'Método no permitido'}, status=405)
-
