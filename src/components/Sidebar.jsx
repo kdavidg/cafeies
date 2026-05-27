@@ -61,7 +61,6 @@ function SideBar({
       {/* Panel Admin - solo si es admin */}
       {esAdmin && (
         <>
-          <div className="sidebar-divider" />
           <span className="sidebar-section-label">Administración</span>
 
           <button
