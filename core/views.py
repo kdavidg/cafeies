@@ -191,3 +191,19 @@ def crear_pago_stripe(request):
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
     return JsonResponse({'error': 'Método no permitido'}, status=405)
+
+def listar_franjas_horarias(request):
+    try:
+        franjas = FranjasHorarias.objects.filter(activa=True).order_by('hora_inicio')
+        lista_final = []
+        for f in franjas:
+            lista_final.append({
+                "id": f.id,
+                "hora_inicio": str(f.hora_inicio),
+                "hora_fin": str(f.hora_fin),
+                "activa": f.activa,
+                "max_pedidos": f.max_pedidos
+            })
+        return JsonResponse(lista_final, safe=False)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
