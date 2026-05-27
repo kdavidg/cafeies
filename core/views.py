@@ -2,26 +2,26 @@ import json
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.shortcuts import get_object_or_404
-from .models import Producto, Pedido 
+from .models import Producto, Pedido, Usuario, FranjasHorarias
 
-def listar_productos(request):
+def listar_pedidos(request):
     try:
-        productos = Producto.objects.all()
+        pedidos = Pedido.objects.all().order_by('-fecha')
         lista_final = []
-        for p in productos:
+        for p in pedidos:
             lista_final.append({
-                "id": p.id,
-                "nombre": p.nombre,
-                "precio": float(p.precio),
-                "descripcion": getattr(p, 'descripcion', 'Producto cafetería'),
-                "categoria": p.categoria,
-                "emoji": p.emoji,
-                "stock": p.stock,
-                "badges": getattr(p, 'badges', [])
+                "id": str(p.id),
+                "usuario": p.usuario.email,
+                "total": float(p.total),
+                "franja_horaria": str(p.franja_horaria) if p.franja_horaria else None,
+                "fecha": p.fecha.isoformat(),
+                "items": p.items,
+                "estado": p.estado,
+                "codigo": p.codigo
             })
         return JsonResponse(lista_final, safe=False)
     except Exception as e:
-        return JsonResponse({"error": str(e)}, status=500)
+        return JsonResponse({"error": "Error interno", "detalle": str(e)}, status=500)
 
 @csrf_exempt
 def crear_pedido(request):
@@ -29,20 +29,33 @@ def crear_pedido(request):
         try:
             data = json.loads(request.body)
             items = data.get('items', {})
+            email_usuario = data.get('usuario')
+            franja_id = data.get('franja_horaria_id')
             
-            # Validar stock disponible
+            # Obtener o crear usuario
+            usuario, created = Usuario.objects.get_or_create(
+                email=email_usuario,
+                defaults={'nombre': email_usuario.split('@')[0]}
+            )
+            
+            # Obtener franja horaria
+            franja = None
+            if franja_id:
+                franja = get_object_or_404(FranjasHorarias, pk=franja_id)
+            
+            # Validar stock
             for producto_id, cantidad in items.items():
                 producto = get_object_or_404(Producto, pk=producto_id)
                 if producto.stock < cantidad:
                     return JsonResponse({
-                        "error": f"Stock insuficiente para {producto.nombre}. Disponible: {producto.stock}, Solicitado: {cantidad}"
+                        "error": f"Stock insuficiente para {producto.nombre}"
                     }, status=400)
             
-            # Si hay stock, crear pedido
+            # Crear pedido
             nuevo_pedido = Pedido.objects.create(
-                usuario=data.get('usuario'),
+                usuario=usuario,
                 total=data.get('total'),
-                franja_horaria=data.get('franja_horaria'),
+                franja_horaria=franja,
                 items=items,
                 estado='pendiente'
             )
