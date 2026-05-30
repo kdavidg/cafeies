@@ -137,8 +137,8 @@ const handleGoogleLogin = () => {
   setUser(null);
   setCurrentView('login');
 };
-const toggleFavorite = async (productId) => {
-  const newFavorites = new Set(favorites);
+  const toggleFav = (id) => {
+    const newFavorites = new Set(favorites);
   const esFavorito = newBavorites.has(productId);
   
   if (esFavorito) {
