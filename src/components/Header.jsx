@@ -1,5 +1,7 @@
 import React from 'react';
 
+const ADMIN_EMAIL = 'davidgonzaga140@gmail.com';
+
 export default function Header({ 
   user, 
   searchQuery, 
@@ -10,9 +12,10 @@ export default function Header({
   sidebarOpen,
   setSidebarOpen
 }) {
+  const esAdmin = user?.email === ADMIN_EMAIL;
+  
   return (
     <header className="app-header">
-      {/* Hamburguesa en móvil */}
       <button 
         className="hamburger-menu"
         onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -36,14 +39,18 @@ export default function Header({
         />
       </div>
       <div className="header-actions">
-        <button className="hdr-btn" onClick={() => setCurrentView('favs')} title="Mis favoritos">
-          ⭐
-          {favoritesCount > 0 && <span className="hdr-badge">{favoritesCount}</span>}
-        </button>
-        <button className="hdr-btn primary" onClick={() => setCurrentView('cart')} title="Tu pedido">
-          🛒
-          {orderCount > 0 && <span className="hdr-badge">{orderCount}</span>}
-        </button>
+        {!esAdmin && (
+          <>
+            <button className="hdr-btn" onClick={() => setCurrentView('favs')} title="Mis favoritos">
+              ⭐
+              {favoritesCount > 0 && <span className="hdr-badge">{favoritesCount}</span>}
+            </button>
+            <button className="hdr-btn primary" onClick={() => setCurrentView('cart')} title="Tu pedido">
+              🛒
+              {orderCount > 0 && <span className="hdr-badge">{orderCount}</span>}
+            </button>
+          </>
+        )}
         <button className="user-avatar" onClick={() => setCurrentView('profile')} title="Mi cuenta">
           {user?.avatar || 'U'}
         </button>
