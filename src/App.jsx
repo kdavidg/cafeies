@@ -108,12 +108,15 @@ useEffect(() => {
 }, [currentView]);
 
 const cargarFavoritos = async (email) => {
+  console.log("Cargando favoritos para:", email);  // ← AGREGA
   try {
     const response = await fetch(`https://backend-production-2b15.up.railway.app/api/usuario/?email=${email}`);
     const data = await response.json();
+    console.log("Favoritos recibidos:", data);  // ← AGREGA
     
     if (data.favoritos) {
       setFavorites(new Set(data.favoritos));
+      console.log("Favoritos cargados:", data.favoritos);  // ← AGREGA
     }
   } catch (error) {
     console.error("Error cargando favoritos:", error);
