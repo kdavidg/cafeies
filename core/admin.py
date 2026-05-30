@@ -25,6 +25,7 @@ class UsuarioAdmin(admin.ModelAdmin):
     list_display = ('email', 'nombre', 'es_admin', 'fecha_registro')
     list_filter = ('es_admin',)
     search_fields = ('email', 'nombre')
+    filter_horizontal = ('productos_favoritos',)
 
 @admin.register(FranjasHorarias)
 class FranjasHorariasAdmin(admin.ModelAdmin):
