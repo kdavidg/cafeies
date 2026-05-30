@@ -137,14 +137,15 @@ const handleGoogleLogin = () => {
   setUser(null);
   setCurrentView('login');
 };
-  const toggleFav = (id) => {
-    const newFavorites = new Set(favorites);
-  const esFavorito = newBavorites.has(productId);
+
+const toggleFav = async (id) => {
+  const newFavorites = new Set(favorites);
+  const esFavorito = newFavorites.has(id);
   
   if (esFavorito) {
-    newFavorites.delete(productId);
+    newFavorites.delete(id);
   } else {
-    newFavorites.add(productId);
+    newFavorites.add(id);
   }
   
   setFavorites(newFavorites);
@@ -156,7 +157,7 @@ const handleGoogleLogin = () => {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         email: user.email,
-        producto_id: productId,
+        producto_id: id,
         agregar: !esFavorito
       })
     });
