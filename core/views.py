@@ -229,6 +229,8 @@ def obtener_usuario(request):
     except Usuario.DoesNotExist:
         return JsonResponse({"email": email, "favoritos": []})
 
+
+@csrf_exempt
 @require_http_methods(["POST"])
 def actualizar_favoritos(request):
     try:
