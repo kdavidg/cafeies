@@ -329,16 +329,18 @@ const finalizarPedidoGestion = async (pedidoId, accion) => {
               width: '100%' 
             }}>
               <GoogleLogin
-            onSuccess={credentialResponse => {
-              const decoded = jwtDecode(credentialResponse.credential);
-              console.log("Datos de Google:", decoded);
+  onSuccess={credentialResponse => {
+    const decoded = jwtDecode(credentialResponse.credential);
+    console.log("Datos de Google:", decoded);
 
-              setUser({ 
-                name: decoded.given_name,
-                email: decoded.email,
+    setUser({ 
+      name: decoded.given_name,
+      email: decoded.email,
     });
     
     setIsLoggedIn(true);
+    setFavorites(new Set());
+    cargarFavoritos(decoded.email);
     setCurrentView('menu');
   }}
   onError={() => console.log('Login Fallido')}
