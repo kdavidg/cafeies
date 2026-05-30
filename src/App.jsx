@@ -107,28 +107,67 @@ useEffect(() => {
     }
 }, [currentView]);
 
-  const handleLogin = (email, password) => {
-    setUser({ name: email.split('@')[0], email, avatar: email[0].toUpperCase() });
-    setIsLoggedIn(true);
-    setCurrentView('menu');
-  };
+const cargarFavoritos = async (email) => {
+  try {
+    const response = await fetch(`https://backend-production-2b15.up.railway.app/api/usuario/?email=${email}`);
+    const data = await response.json();
+    
+    if (data.favoritos) {
+      setFavorites(new Set(data.favoritos));
+    }
+  } catch (error) {
+    console.error("Error cargando favoritos:", error);
+  }
+};
 
-  const handleGoogleLogin = () => {
-    setUser(USER);
-    setIsLoggedIn(true);
-    setCurrentView('menu');
-  };
+const handleLogin = (email, password) => {
+  setUser({ email, name: email.split('@')[0] });
+  setIsLoggedIn(true);
+  cargarFavoritos(email);
+};
+
+const handleGoogleLogin = () => {
+  setUser({ email: 'usuario@gmail.com', name: 'Usuario' });
+  setIsLoggedIn(true);
+  cargarFavoritos('usuario@gmail.com');
+};
 
   const handleLogout = () => {
   setIsLoggedIn(false);
   setUser(null);
   setCurrentView('login');
 };
-  const toggleFav = (id) => {
-    const newFavs = new Set(favorites);
-    newFavs.has(id) ? newFavs.delete(id) : newFavs.add(id);
-    setFavorites(newFavs);
-  };
+const toggleFavorite = async (productId) => {
+  const newFavorites = new Set(favorites);
+  const esFavorito = newBavorites.has(productId);
+  
+  if (esFavorito) {
+    newFavorites.delete(productId);
+  } else {
+    newFavorites.add(productId);
+  }
+  
+  setFavorites(newFavorites);
+  setFavoritesCount(newFavorites.size);
+  
+  try {
+    const response = await fetch('https://backend-production-2b15.up.railway.app/api/usuario/favoritos/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: user.email,
+        producto_id: productId,
+        agregar: !esFavorito
+      })
+    });
+    
+    if (!response.ok) {
+      console.error("Error guardando favorito");
+    }
+  } catch (error) {
+    console.error("Error:", error);
+  }
+};
 
   const changeQty = (id, delta) => {
   setOrderItems(prev => {
