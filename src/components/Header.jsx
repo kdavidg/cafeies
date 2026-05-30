@@ -27,7 +27,7 @@ export default function Header({
       <a className="header-logo" href="#" onClick={() => setCurrentView('menu')}>
         café<span>IES</span>
       </a>
-      <div className="header-notice">⏰ Recreo 11:15–11:45 · Pedidos hasta las 10:00</div>
+      <div className="header-notice">⏰ Recreo 11:15–11:45</div>
       <div className="header-spacer" />
       <div className="header-search">
         <span>🔍</span>

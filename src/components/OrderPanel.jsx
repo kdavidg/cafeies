@@ -1,8 +1,11 @@
 import React from 'react';
 
-function OrderPanel({ orderItems, PRODUCTS, orderTotal, orderCount, setCurrentView, setOrderItems, changeQty, finalizarPedido }) {
+function OrderPanel({ orderItems, PRODUCTS, orderTotal, orderCount, setCurrentView, setOrderItems, changeQty, finalizarPedido, esAdmin }) {
   
   const handleClear = () => setOrderItems({});
+
+  // Si es admin, no mostrar el panel
+  if (esAdmin) return null;
 
   return (
     <div className="order-panel">
@@ -60,8 +63,6 @@ function OrderPanel({ orderItems, PRODUCTS, orderTotal, orderCount, setCurrentVi
         })}
       </div>
 
-      
-      
       {/* PIE DEL PANEL (FIJO ABAJO) */}
       <div className="order-panel-footer" style={{ padding: '20px', borderTop: '1px solid var(--border)', background: 'white' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', fontSize: '18px', fontWeight: '800' }}>
@@ -70,13 +71,13 @@ function OrderPanel({ orderItems, PRODUCTS, orderTotal, orderCount, setCurrentVi
         </div>
         
         <button
-    className="btn-primary"
-    onClick={() => setCurrentView('checkout')}
-    disabled={orderCount === 0}
-    style={{ opacity: orderCount === 0 ? 0.5 : 1, width: '100%' }}
->
-    Pagar y Confirmar ({orderTotal.toFixed(2)}€)
-</button>
+          className="btn-primary"
+          onClick={() => setCurrentView('checkout')}
+          disabled={orderCount === 0}
+          style={{ opacity: orderCount === 0 ? 0.5 : 1, width: '100%' }}
+        >
+          Pagar y Confirmar ({orderTotal.toFixed(2)}€)
+        </button>
       </div>
     </div>
   );

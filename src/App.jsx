@@ -807,6 +807,7 @@ const finalizarPedidoGestion = async (pedidoId, accion) => {
               setCurrentView={setCurrentView}
               setOrderItems={setOrderItems}
               changeQty={changeQty}
+              esAdmin={user?.email === 'davidgonzaga140@gmail.com'} 
               />
             )}
           </div>
