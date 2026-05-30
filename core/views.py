@@ -1,8 +1,11 @@
 import json
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.http import require_http_methods
 from django.shortcuts import get_object_or_404
 from .models import Producto, Pedido, Usuario, FranjasHorarias
+import stripe
+import os
 
 def listar_productos(request):
     try:
@@ -163,8 +166,6 @@ def borrar_producto(request, pk):
             return JsonResponse({'error': str(e)}, status=400)
     return JsonResponse({'error': 'Método no permitido'}, status=405)
 
-import stripe
-import os
 
 stripe.api_key = os.environ.get('STRIPE_SECRET_KEY')
 
@@ -205,5 +206,45 @@ def listar_franjas_horarias(request):
                 "max_pedidos": f.max_pedidos
             })
         return JsonResponse(lista_final, safe=False)
+    except Exception as e:
+        return JsonResponse({"error": str(e)}, status=500)
+    
+
+    
+@require_http_methods(["GET"])
+def obtener_usuario(request):
+    email = request.GET.get('email')
+    if not email:
+        return JsonResponse({"error": "Email requerido"}, status=400)
+    
+    try:
+        usuario = Usuario.objects.get(email=email)
+        favoritos = list(usuario.productos_favoritos.values_list('id', flat=True))
+        return JsonResponse({
+            "id": usuario.id,
+            "email": usuario.email,
+            "nombre": usuario.nombre,
+            "favoritos": favoritos
+        })
+    except Usuario.DoesNotExist:
+        return JsonResponse({"email": email, "favoritos": []})
+
+@require_http_methods(["POST"])
+def actualizar_favoritos(request):
+    try:
+        data = json.loads(request.body)
+        email = data.get('email')
+        producto_id = data.get('producto_id')
+        agregar = data.get('agregar')
+        
+        usuario, _ = Usuario.objects.get_or_create(email=email)
+        producto = Producto.objects.get(id=producto_id)
+        
+        if agregar:
+            usuario.productos_favoritos.add(producto)
+        else:
+            usuario.productos_favoritos.remove(producto)
+        
+        return JsonResponse({"success": True})
     except Exception as e:
         return JsonResponse({"error": str(e)}, status=500)
