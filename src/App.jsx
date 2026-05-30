@@ -120,11 +120,12 @@ const cargarFavoritos = async (email) => {
   }
 };
 
-const handleLogin = (email, password) => {
-  setUser({ email, name: email.split('@')[0] });
-  setIsLoggedIn(true);
-  cargarFavoritos(email);
-};
+  const handleLogin = (email, password) => {
+    setUser({ email, name: email.split('@')[0] });
+    setIsLoggedIn(true);
+    setFavorites(new Set());
+    cargarFavoritos(email);
+  };
 
 const handleGoogleLogin = () => {
   setUser({ email: 'usuario@gmail.com', name: 'Usuario' });
@@ -133,10 +134,14 @@ const handleGoogleLogin = () => {
 };
 
   const handleLogout = () => {
-  setIsLoggedIn(false);
-  setUser(null);
-  setCurrentView('login');
-};
+    setIsLoggedIn(false);
+    setUser(null);
+    setFavorites(new Set());
+    setFavoritesCount(0);
+    setOrderItems({});
+    setPedidos([]);
+    setCurrentView('login');
+  };
 
 const toggleFav = async (id) => {
   const newFavorites = new Set(favorites);
