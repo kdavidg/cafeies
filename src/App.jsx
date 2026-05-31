@@ -6,9 +6,20 @@ import SideBar from './components/Sidebar.jsx';
 import ProductCard from './components/ProductCard.jsx';
 import OrderPanel from './components/OrderPanel.jsx';
 import LoginForm from './components/Login.jsx';
+import AdminPanel from './pages/AdminPanel.jsx';
+
+import { Elements } from '@stripe/react-stripe-js';
+import StripeCheckout from './components/StripeCheckout.jsx';
 
 import { TIME_SLOTS } from './data/timeSlots.js';
 import { USER } from './data/user.js';
+
+import { GoogleOAuthProvider, GoogleLogin } from '@react-oauth/google';
+import { jwtDecode } from 'jwt-decode';
+
+<GoogleOAuthProvider clientId="389069267633-j5n6e0r6p4ec99be2v3hfjderhe54vgh.apps.googleusercontent.com">
+    <CaféIES />
+</GoogleOAuthProvider>
 
 
 export default function CaféIES() {
@@ -22,29 +33,32 @@ export default function CaféIES() {
   const [products, setProducts] = useState([]); 
   const [loading, setLoading] = useState(true);
   const [pedidos, setPedidos] = useState([]);
-
+  const [franjaElegida, setFranjaElegida] = useState(null);
+  const [metodoPago, setMetodoPago] = useState('monedero');
+  const [lastOrder, setLastOrder] = useState(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [favoritesCount, setFavoritesCount] = useState(0);
+  const [historialFilter, setHistorialFilter] = useState('todos');
+  const [franjas, setFranjas] = useState([]);
+  
  useEffect(() => {
   const fetchProducts = async () => {
     try {
-      const response = await fetch('http://127.0.0.1:8000/api/productos/');
+      const response = await fetch('https://backend-production-2b15.up.railway.app/api/productos/');
       const data = await response.json();
-
-      console.log(data);
-
+      
       const formattedProducts = data.map(product => ({
         id: product.id,
         name: product.nombre,
         desc: product.descripcion || "Producto cafetería",
-        price: product.precio,
+        price: parseFloat(product.precio),
         cat: product.categoria || "bebidas",
         emoji: product.emoji || "☕",
-        badges: product.badges || []
+        badges: []
       }));
-
       setProducts(formattedProducts);
-
     } catch (error) {
-      console.error("Error cargando productos de Django:", error);
+      console.error("Error cargando productos:", error);
     } finally {
       setLoading(false);
     }
@@ -54,15 +68,31 @@ export default function CaféIES() {
 }, []);
 
 useEffect(() => {
+  const fetchFranjas = async () => {
+    try {
+      const response = await fetch('https://backend-production-2b15.up.railway.app/api/franjas-horarias/');
+      const data = await response.json();
+      setFranjas(data);
+    } catch (error) {
+      console.error("Error cargando franjas:", error);
+    }
+  };
+  fetchFranjas();
+}, []);
+
+
+useEffect(() => {
   if (currentView === 'history' || currentView === 'menu') {
     fetchPedidos();
   }
 }, [currentView]);
 
+const stripePromise = window.Stripe ? Promise.resolve(window.Stripe('pk_test_51Tahy3Rwe5FWVGQyhAmDFvxaeR5vFiG4Ja2sjfnAA6bocTNIxfGXADfhJdMZBxmATHwFk9x0FWO8LR82qpFzIlCL00Y62Rrklm')) : Promise.reject(new Error('Stripe failed to load'));
+
 
 const fetchPedidos = async () => {
     try {
-        const response = await fetch('http://127.0.0.1:8000/api/pedidos/lista/');
+        const response = await fetch('https://backend-production-2b15.up.railway.app/api/pedidos/lista/');
         const data = await response.json();
         setPedidos(data);
     } catch (error) {
@@ -76,28 +106,76 @@ useEffect(() => {
     }
 }, [currentView]);
 
+const cargarFavoritos = async (email) => {
+  console.log("Cargando favoritos para:", email);  // ← AGREGA
+  try {
+    const response = await fetch(`https://backend-production-2b15.up.railway.app/api/usuario/?email=${email}`);
+    const data = await response.json();
+    console.log("Favoritos recibidos:", data);  // ← AGREGA
+    
+    if (data.favoritos) {
+      setFavorites(new Set(data.favoritos));
+      console.log("Favoritos cargados:", data.favoritos);  // ← AGREGA
+    }
+  } catch (error) {
+    console.error("Error cargando favoritos:", error);
+  }
+};
+
   const handleLogin = (email, password) => {
-    setUser({ name: email.split('@')[0], email, avatar: email[0].toUpperCase() });
+    setUser({ email, name: email.split('@')[0] });
     setIsLoggedIn(true);
-    setCurrentView('menu');
+    setFavorites(new Set());
+    cargarFavoritos(email);
   };
 
-  const handleGoogleLogin = () => {
-    setUser(USER);
-    setIsLoggedIn(true);
-    setCurrentView('menu');
-  };
+const handleGoogleLogin = () => {
+  setUser({ email: 'usuario@gmail.com', name: 'Usuario' });
+  setIsLoggedIn(true);
+  cargarFavoritos('usuario@gmail.com');
+};
 
   const handleLogout = () => {
     setIsLoggedIn(false);
+    setUser(null);
+    setFavorites(new Set());
+    setFavoritesCount(0);
+    setOrderItems({});
+    setPedidos([]);
     setCurrentView('login');
   };
 
-  const toggleFav = (id) => {
-    const newFavs = new Set(favorites);
-    newFavs.has(id) ? newFavs.delete(id) : newFavs.add(id);
-    setFavorites(newFavs);
-  };
+const toggleFav = async (id) => {
+  const newFavorites = new Set(favorites);
+  const esFavorito = newFavorites.has(id);
+  
+  if (esFavorito) {
+    newFavorites.delete(id);
+  } else {
+    newFavorites.add(id);
+  }
+  
+  setFavorites(newFavorites);
+  setFavoritesCount(newFavorites.size);
+  
+  try {
+    const response = await fetch('https://backend-production-2b15.up.railway.app/api/usuario/favoritos/', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        email: user.email,
+        producto_id: id,
+        agregar: !esFavorito
+      })
+    });
+    
+    if (!response.ok) {
+      console.error("Error guardando favorito");
+    }
+  } catch (error) {
+    console.error("Error:", error);
+  }
+};
 
   const changeQty = (id, delta) => {
   setOrderItems(prev => {
@@ -110,86 +188,180 @@ useEffect(() => {
   });
 };
 
-  const finalizarPedido = async () => {
-  // 1. Preparamos el objeto exactamente como lo espera Django
+const finalizarPedidoConPago = async (paymentIntentId) => {
+  if (!franjaElegida) {
+    alert("⚠️ Debes seleccionar una franja horaria");
+    return;
+  }
+
   const pedidoParaEnviar = {
     usuario: user?.email || "usuario_anonimo@cafeies.com",
     items: orderItems,
     total: orderTotal,
+    franja_horaria_id: parseInt(franjaElegida),
     fecha: new Date().toISOString(),
-    nota: document.getElementById('order-note-input')?.value || ""
+    payment_intent_id: paymentIntentId
   };
 
-  console.log("Enviando pedido a Django:", pedidoParaEnviar);
+  
 
   try {
-    // IMPORTANTE: Revisa que esta URL sea la misma que en tu urls.py
-    // Si en urls.py pusiste 'api/pedidos/crear/', asegúrate de que termine en /
-    const response = await fetch('http://127.0.0.1:8000/api/pedidos/crear/', {
+    const response = await fetch('https://backend-production-2b15.up.railway.app/api/pedidos/crear/', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(pedidoParaEnviar),
     });
 
     if (response.ok) {
       const result = await response.json();
-      console.log("Respuesta de Mongo:", result);
+      console.log("Pedido creado:", result);
       
-      alert("¡Pedido guardado correctamente! 🎉");
+      setLastOrder({
+        codigo: result.codigo || 'XXXX',
+        franja_horaria: franjaElegida,
+        items: orderItems,
+        total: orderTotal
+      });
       
-      // Limpiar y navegar
       setOrderItems({});
-      if (typeof fetchPedidos === 'function') fetchPedidos(); // Recarga el historial
-      setCurrentView('history');
+      fetchPedidos();
+      setCurrentView('confirmation');
     } else {
-      const errorText = await response.text();
-      console.error("Error del servidor Django:", errorText);
-      alert("Error al guardar: " + errorText);
+      const errorData = await response.json();
+      alert("⚠️ " + (errorData.error || "Error al guardar"));
     }
   } catch (error) {
-    console.error("Error de conexión (CORS o Servidor apagado):", error);
-    alert("No se pudo conectar con el servidor. ¿Está Django encendido?");
+    console.error("Error de conexión:", error);
+    alert("❌ No se pudo conectar con el servidor");
   }
 };
 
-  // Filtrado y Cálculos
+const finalizarPedidoGestion = async (pedidoId, accion) => {
+    const nuevoEstado = accion === 'listo' ? 'completado' : 'cancelado';
+    
+    if (!window.confirm(`¿Seguro que quieres marcar como ${accion.toUpperCase()}?`)) return;
+
+    const API_URL = window.location.hostname === "localhost" 
+      ? "http://127.0.0.1:8000" 
+      : "https://backend-production-2b15.up.railway.app";
+
+    try {
+      const response = await fetch(`${API_URL}/api/pedidos/eliminar/${pedidoId}/`, {
+        method: 'POST', 
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ estado: nuevoEstado }),
+      });
+
+      if (response.ok) {
+        fetchPedidos();
+      } else {
+        alert("Error al actualizar el pedido.");
+      }
+    } catch (error) {
+      console.error("Error:", error);
+    }
+};
+
+
   const filteredProducts = products.filter(p => 
     (selectedCategory === 'todo' || p.cat === selectedCategory) &&
     (p.name.toLowerCase().includes(searchQuery.toLowerCase()) || p.desc.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
   const orderTotal = useMemo(() => {
-    return Object.entries(orderItems).reduce((sum, [id, qty]) => 
-      sum + (products.find(p => p.id == id)?.price || 0) * qty, 0);
-  }, [orderItems, products]);
+  return Object.entries(orderItems).reduce((sum, [id, qty]) => {
+    const product = products.find(p => String(p.id) === String(id));
+    const price = parseFloat(product?.price) || 0; 
+    return sum + (price * qty);
+  }, 0);
+}, [orderItems, products]);
 
   const orderCount = React.useMemo(() => {
     return Object.values(orderItems).reduce((sum, qty) => sum + qty, 0);
   }, [orderItems]);
 
-  // --- RENDER ---
   return (
+    <GoogleOAuthProvider clientId="389069267633-j5n6e0r6p4ec99be2v3hfjderhe54vgh.apps.googleusercontent.com">
     <div className="app-container">
       {!isLoggedIn ? (
-        <div className="login-screen">
-          <div className="login-card">
-            <div className="login-logo-mark">café</div>
-            <h1 className="login-headline">Bienvenido a Café<em>IES</em></h1>
-            <p className="login-sub">Pide sin hacer cola</p>
-            <LoginForm onLogin={handleLogin} onGoogleLogin={handleGoogleLogin} />
+        <div className="login-screen" style={{ 
+          background: 'radial-gradient(circle at center, #2c1a10 0%, #000000 100%)',
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+          height: '100vh',
+          margin: 0
+        }}>
+          <div className="login-card" style={{ 
+            background: 'rgba(255, 255, 255, 0.03)', 
+            backdropFilter: 'blur(15px)',
+            border: '1px solid rgba(255, 255, 255, 0.08)',
+            padding: '50px 40px',
+            borderRadius: '28px',
+            textAlign: 'center',
+            width: '100%',
+            maxWidth: '420px',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.5)'
+          }}>
+            <div style={{ 
+              background: '#10B981', 
+              width: '64px', 
+              height: '64px', 
+              borderRadius: '16px', 
+              margin: '0 auto 24px',
+              display: 'flex',
+              justifyContent: 'center',
+              alignItems: 'center',
+              fontSize: '18px',
+              fontWeight: 'bold',
+              color: 'white',
+              boxShadow: '0 8px 20px rgba(26, 255, 167, 0.3)'
+            }}>café</div>
+
+            <h1 style={{ color: 'white', fontSize: '32px', marginBottom: '8px', fontWeight: '800', letterSpacing: '-0.5px' }}>
+              Bienvenido a <span style={{ color: '#10B981' }}>CaféIES</span>
+            </h1>
+            <p style={{ color: 'rgba(255,255,255,0.5)', marginBottom: '35px', fontSize: '15px' }}>Pide sin hacer cola</p>
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'center',
+              width: '100%' 
+            }}>
+              <GoogleLogin
+  onSuccess={credentialResponse => {
+    const decoded = jwtDecode(credentialResponse.credential);
+    console.log("Datos de Google:", decoded);
+
+    setUser({ 
+      name: decoded.given_name,
+      email: decoded.email,
+    });
+    
+    setIsLoggedIn(true);
+    setFavorites(new Set());
+    cargarFavoritos(decoded.email);
+    setCurrentView('menu');
+  }}
+  onError={() => console.log('Login Fallido')}
+  theme="outline"
+  size="large"
+  shape="pill"
+  locale="es"
+/>
+            </div>
           </div>
         </div>
       ) : (
         <>
           <Header 
             user={user} 
-            searchQuery={searchQuery} 
-            setSearchQuery={setSearchQuery} 
-            favoritesCount={favorites.size}
+            searchQuery={searchQuery}
+            setSearchQuery={setSearchQuery}
+            favoritesCount={favoritesCount}
             orderCount={orderCount}
             setCurrentView={setCurrentView}
+            sidebarOpen={sidebarOpen}
+            setSidebarOpen={setSidebarOpen}
           />
 
           <div className="app-body">
@@ -200,7 +372,19 @@ useEffect(() => {
               orderCount={orderCount}
               user={user}
               handleLogout={handleLogout}
+              onClick={() => setCurrentView('admin')}
+              sidebarOpen={sidebarOpen}
+              setSidebarOpen={setSidebarOpen}
             />
+
+            {/* Overlay para cerrar sidebar en móvil */}
+            {sidebarOpen && (
+              <div 
+                className="sidebar-overlay"
+                onClick={() => setSidebarOpen(false)}
+              />
+            )}
+
            <main className="app-main">
             {/* 1. VISTA DE MENÚ*/}
             {currentView === 'menu' && (
@@ -212,16 +396,20 @@ useEffect(() => {
               </div>
               
               <div className="time-slots-wrapper">
-                <span className="slots-label">Selecciona hora de recogida:</span>
+                <span className="slots-label">SELECCIONA HORA DE RECOGIDA:</span>
                 <div className="time-slots-container">
-                  {TIME_SLOTS.map(slot => (
-                    <button key={slot.time} className="time-chip">
-                      <span className="time-value">{slot.time}</span>
-                      <span className="time-label">{slot.label}</span>
-                      </button>
-                    ))}
-                  </div>
+                  {franjas.map(franja => (
+                    <button 
+                      key={franja.id} 
+                      className={`time-chip ${franjaElegida === franja.id ? 'active' : ''}`}
+                      onClick={() => setFranjaElegida(franja.id)}
+                      style={franjaElegida === franja.id ? {backgroundColor: 'var(--orange)', color: 'white'} : {}}
+                    >
+                      <span className="time-value">{franja.hora_inicio.slice(0, 5)} - {franja.hora_fin.slice(0, 5)}</span>
+                    </button>
+                  ))}
                 </div>
+              </div>
               </div>
               
                 <div className="category-tabs">
@@ -231,7 +419,7 @@ useEffect(() => {
                       className={`cat-tab ${selectedCategory === cat ? 'active' : ''}`}
                       onClick={() => setSelectedCategory(cat)}
                     >
-                      {cat === 'todo' ? '🥪 Todo' : cat.charAt(0).toUpperCase() + cat.slice(1)}
+                      {cat === 'todo' ? ' Todo' : cat.charAt(0).toUpperCase() + cat.slice(1)}
                     </button>
                   ))}
                 </div>
@@ -252,58 +440,45 @@ useEffect(() => {
                 </div>
               </section>
             )}
-          {/* VISTA DE PAGO (CHECKOUT) */}
+
+            {/* VISTA DE PAGO (CHECKOUT) CON STRIPE */}
 {currentView === 'checkout' && (
   <section className="view active">
-    <div className="content-header">
-      {/* Botón para volver al menú si el usuario se arrepiente */}
+    <div className="content-header" style={{ marginBottom: '10px', paddingBottom: '5px' }}>
       <button className="btn-secondary" onClick={() => setCurrentView('menu')} style={{marginRight: '15px'}}>
         Volver
       </button>
       <h2 className="content-title">Finalizar Pedido</h2>
     </div>
 
-    <div className="checkout-container" style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '30px', padding: '20px' }}>
+    <div className="checkout-container" style={{ display: 'grid', gridTemplateColumns: '1fr 350px', gap: '20px', padding: '10px 20px', maxWidth: '1200px', margin: '0 auto', alignItems: 'start', '@media (max-width: 768px)': { gridTemplateColumns: '1fr' } }}>
       
-      {/* Columna Izquierda: Métodos de Pago */}
+      {/* Columna Izquierda: Stripe */}
       <div className="checkout-methods">
-        <h3 style={{ marginBottom: '20px' }}>Método de pago</h3>
+        <h3 style={{ marginBottom: '20px' }}>Pago con tarjeta</h3>
         
-        <div className="payment-options" style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-          <label className="payment-card" style={{ display: 'flex', alignItems: 'center', padding: '20px', border: '2px solid var(--orange)', borderRadius: '15px', cursor: 'pointer', background: 'var(--orange-light)' }}>
-            <input type="radio" name="payment" defaultChecked style={{ marginRight: '15px' }} />
-            <div>
-              <div style={{ fontWeight: 'bold' }}>💰 Monedero Virtual</div>
-              <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Saldo disponible: 14.50€</div>
-            </div>
-          </label>
-
-          <label className="payment-card" style={{ display: 'flex', alignItems: 'center', padding: '20px', border: '1px solid var(--border)', borderRadius: '15px', cursor: 'pointer' }}>
-            <input type="radio" name="payment" style={{ marginRight: '15px' }} />
-            <div>
-              <div style={{ fontWeight: 'bold' }}>💵 Efectivo en barra</div>
-              <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>Paga al recoger tu pedido</div>
-            </div>
-          </label>
-        </div>
-
-        <div className="order-note" style={{ marginTop: '30px' }}>
-          <h3 style={{ marginBottom: '10px' }}>¿Alguna nota especial?</h3>
-          <textarea 
-            placeholder="Ej: Sin cebolla, alérgico a la lactosa..." 
-            style={{ width: '100%', padding: '15px', borderRadius: '12px', border: '1px solid var(--border)', fontFamily: 'inherit' }}
-            rows="3"
-            id="order-note-input"
-          ></textarea>
-        </div>
+        <StripeCheckout 
+          total={orderTotal}
+          franjaElegida={franjaElegida}
+          orderItems={orderItems}
+          user={user}
+          products={products}
+          stripePromise={stripePromise}
+          onSuccess={(paymentIntentId) => {
+            finalizarPedidoConPago(paymentIntentId);
+          }}
+        />
       </div>
 
-      {/* Columna Derecha: Resumen Final */}
-      <div className="checkout-summary" style={{ background: 'white', padding: '25px', borderRadius: '20px', border: '1px solid var(--border)', height: 'fit-content' }}>
+      {/* Columna Derecha: Resumen */}
+      <div className="checkout-summary" style={{ background: 'white', padding: '20px', borderRadius: '20px', border: '1px solid var(--border)', height: 'fit-content' }}>
         <h3 style={{ marginBottom: '20px' }}>Resumen</h3>
+        <div style={{ background: '#fff3e0', padding: '12px', borderRadius: '8px', marginBottom: '15px', textAlign: 'center', fontWeight: 'bold', color: '#10B981', fontSize: '14px' }}>
+          📍 {franjas.find(f => f.id === franjaElegida) ? `${franjas.find(f => f.id === franjaElegida).hora_inicio.slice(0, 5)} - ${franjas.find(f => f.id === franjaElegida).hora_fin.slice(0, 5)}` : 'Selecciona franja'}
+        </div>
         <div className="summary-items">
           {Object.entries(orderItems).map(([id, qty]) => {
-            const product = products.find(p => p.id == id);
+            const product = products.find(p => String(p.id) === String(id));
             return (
               <div key={id} style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '10px', fontSize: '14px' }}>
                 <span>{qty}x {product?.name}</span>
@@ -317,16 +492,6 @@ useEffect(() => {
           <span>Total:</span>
           <span>{orderTotal.toFixed(2)}€</span>
         </div>
-
-        {/* BOTÓN MODIFICADO: Ahora llama a la función de conexión con el Backend */}
-        <button 
-          className="btn-primary" 
-          style={{ width: '100%', marginTop: '25px', padding: '15px', fontSize: '16px' }}
-          onClick={finalizarPedido} 
-          disabled={orderCount === 0}
-        >
-          Confirmar y Pagar
-        </button>
       </div>
     </div>
   </section>
@@ -334,194 +499,320 @@ useEffect(() => {
 
 
 
-
-            {/* VISTA DE PANEL DE CAFETERÍA (ADMIN) */}
-{currentView === 'admin' && (
-  <section className="view active">
-    <div className="content-header">
-      <h2 className="content-title">Panel de Gestión - Cafetería ☕</h2>
-    </div>
-
-    <div className="admin-container" style={{ padding: '20px' }}>
-      <div className="admin-stats" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '15px', marginBottom: '20px' }}>
-        <div style={{ background: '#e3f2fd', padding: '15px', borderRadius: '10px', borderLeft: '5px solid #2196f3' }}>
-          <small>Pedidos hoy</small>
-          <div style={{ fontSize: '20px', fontWeight: 'bold' }}>12</div>
-        </div>
-        <div style={{ background: '#fff3e0', padding: '15px', borderRadius: '10px', borderLeft: '5px solid #ff9800' }}>
-          <small>Pendientes</small>
-          <div style={{ fontSize: '20px', fontWeight: 'bold' }}>3</div>
-        </div>
-        <div style={{ background: '#e8f5e9', padding: '15px', borderRadius: '10px', borderLeft: '5px solid #4caf50' }}>
-          <small>Recaudado</small>
-          <div style={{ fontSize: '20px', fontWeight: 'bold' }}>42.50€</div>
-        </div>
-      </div>
-
-      <h3 style={{ marginBottom: '10px' }}>Pedidos en curso</h3>
-      <div className="orders-list" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-        {/* Pedido de ejemplo 1 */}
-        <div style={{ background: 'white', padding: '15px', borderRadius: '10px', border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <span style={{ fontWeight: 'bold' }}>#1204 - Ana M. Rodríguez</span>
-            <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>1x Bocadillo de jamón, 1x Café con leche</div>
-          </div>
-          <div style={{ display: 'flex', gap: '5px' }}>
-            <button style={{ padding: '5px 10px', background: '#4caf50', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>Listo</button>
-            <button style={{ padding: '5px 10px', background: '#f44336', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>X</button>
-          </div>
-        </div>
-
-        {/* Pedido de ejemplo 2 */}
-        <div style={{ background: 'white', padding: '15px', borderRadius: '10px', border: '1px solid var(--border)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <span style={{ fontWeight: 'bold' }}>#1205 - Juan Pérez</span>
-            <div style={{ fontSize: '12px', color: 'var(--text-muted)' }}>2x Napolitana chocolate</div>
-          </div>
-          <div style={{ display: 'flex', gap: '5px' }}>
-            <button style={{ padding: '5px 10px', background: '#4caf50', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>Listo</button>
-            <button style={{ padding: '5px 10px', background: '#f44336', color: 'white', border: 'none', borderRadius: '5px', cursor: 'pointer' }}>X</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-)}
-
-            {/* VISTA DE MI PEDIDO (DETALLADA) */}
-            {currentView === 'cart' && (
-              <section className="view active">
-                <div className="content-header">
-                  <h2 className="content-title">Detalle de tu pedido 🛒</h2>
-                </div>
-
-                <div className="cart-detail-container" style={{ padding: '20px' }}>
-                  {orderCount === 0 ? (
-                    <div style={{ textAlign: 'center', marginTop: '50px' }}>
-                      <div style={{ fontSize: '50px' }}>🛒</div>
-                      <h3>Tu carrito está vacío</h3>
-                      <button 
-                        className="btn-primary" 
-                        onClick={() => setCurrentView('menu')}
-                        style={{ width: 'auto', marginTop: '20px' }}
-                      >
-                        Ir al menú para añadir productos
-                      </button>
-                    </div>
-                  ) : (
-                    <div className="cart-table-wrapper" style={{ background: 'white', borderRadius: '12px', padding: '20px', boxShadow: '0 2px 10px rgba(0,0,0,0.05)' }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-                        <thead>
-                          <tr style={{ borderBottom: '2px solid var(--border)', textAlign: 'left' }}>
-                            <th style={{ padding: '12px' }}>Producto</th>
-                            <th style={{ padding: '12px' }}>Cantidad</th>
-                            <th style={{ padding: '12px' }}>Precio</th>
-                            <th style={{ padding: '12px' }}>Total</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {Object.entries(orderItems).map(([id, qty]) => {
-                            const product = products.find(p => p.id == id);
-                            return (
-                              <tr key={id} style={{ borderBottom: '1px solid var(--border-light)' }}>
-                                <td style={{ padding: '12px' }}>{product.emoji} {product.name}</td>
-                                <td style={{ padding: '12px' }}>{qty}</td>
-                                <td style={{ padding: '12px' }}>{product.price.toFixed(2)}€</td>
-                                <td style={{ padding: '12px' }}>{(product.price * qty).toFixed(2)}€</td>
-                              </tr>
-                            );
-                          })}
-                        </tbody>
-                      </table>
-                      
-                      <div style={{ marginTop: '20px', textAlign: 'right' }}>
-                        <h3 style={{ color: 'var(--orange)' }}>Total a pagar: {orderTotal.toFixed(2)}€</h3>
-                        <button 
-                          className="btn-primary" 
-                          style={{ width: 'auto', marginTop: '10px' }}
-                          onClick={() => alert('¡Pedido enviado a cocina!')}
-                        >
-                          Confirmar y enviar pedido
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </section>
+            {/*VISTA DE ADMIN */}
+            {currentView === 'admin' && (
+              <AdminPanel user={user} products={products} />
             )}
 
-            {/* 2. VISTA DE FAVORITOS */}
+
+            {/*VISTA DE FAVORITOS */}
             {currentView === 'favs' && (
               <section className="view active">
-                <div className="content-header">
-                  <h2 className="content-title">Mis Favoritos ⭐</h2>
-                </div>
-                <div className="products-grid">
-                  {products.filter(p => favorites.has(p.id)).length > 0 ? (
-                    products.filter(p => favorites.has(p.id)).map(product => (
-                      <ProductCard 
-                        key={product.id}
-                        product={product}
-                        isFavorite={true}
-                        onToggleFav={toggleFav}
-                        quantity={orderItems[product.id] || 0}
-                        onChangeQty={changeQty}
-                      />
-                    ))
-                  ) : (
-                    <p style={{padding: '40px', textAlign: 'center', color: 'var(--text-muted)'}}>
-                      Aún no tienes productos favoritos.
-                    </p>
-                  )}
+                <div className="favorites-container">
+                  <div className="content-header">
+                    <h2 className="content-title">Mis Favoritos</h2>
+                  </div>
+                  <div className="products-grid" style={products.filter(p => favorites.has(p.id)).length === 0 ? {justifyContent: 'center', width: '100%'} : {}}>
+                    {products.filter(p => favorites.has(p.id)).length > 0 ? (
+                      products.filter(p => favorites.has(p.id)).map(product => (
+                        <ProductCard 
+                          key={product.id}
+                          product={product}
+                          isFavorite={true}
+                          onToggleFav={toggleFav}
+                          quantity={orderItems[product.id] || 0}
+                          onChangeQty={changeQty}
+                        />
+                      ))
+                    ) : (
+                      <div className="empty-state">
+                        
+                        <h3 className="empty-title">Aún no tienes productos favoritos</h3>
+                        <p className="empty-text">Marca tus productos favoritos para verlos aquí</p>
+                        <button 
+                          className="btn-secondary" 
+                          onClick={() => setCurrentView('menu')}
+                          style={{ marginTop: '20px' }}
+                        >
+                          Ir al menú
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </section>
             )}
 
-            {/* 3. VISTA DE HISTORIAL*/}
-            {currentView === 'history' && (
-  <section className="view active">
-    <div className="content-header">
-      <h2 className="content-title">Historial de Pedidos 📋</h2>
+
+            {/*VISTA DE CARRITO*/}
+          {currentView === 'cart' && (
+            <section className="view active">
+              <div className="content-header">
+                <h2 className="content-title">Tu Pedido Actual</h2>
+              </div>
+              
+              <div className="cart-container" style={{ padding: '20px', maxWidth: '500px', margin: '0 auto', width: '100%' }}>
+                {Object.keys(orderItems).length > 0 ? (
+                  <div style={{ background: 'white', padding: '25px', borderRadius: '20px', boxShadow: '0 4px 15px rgba(0,0,0,0.05)' }}>
+                    {Object.entries(orderItems).map(([id, qty]) => {
+                      const product = products.find(p => String(p.id) === String(id));
+            return (
+              <div key={id} style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '15px', paddingBottom: '15px', borderBottom: '1px solid #eee' }}>
+  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+      <span style={{ fontSize: '24px' }}>{product?.emoji}</span>
+      <div>
+        <div style={{ fontWeight: 'bold', fontSize: '14px' }}>{product?.name}</div>
+        <div style={{ fontSize: '12px', color: '#666' }}>{product?.price.toFixed(2)}€ / ud.</div>
+      </div>
     </div>
-    <div className="pedidos-list" style={{ padding: '20px' }}>
-      {pedidos.length > 0 ? (
-        pedidos.map((pedido) => (
-          <div key={pedido.id} className="payment-card" style={{ marginBottom: '15px', display: 'block' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold' }}>
-              <span>Pedido #{pedido.id.slice(-5)}</span>
-              <span style={{ color: 'var(--orange)' }}>{pedido.total?.toFixed(2)}€</span>
-            </div>
-            <p style={{ fontSize: '12px', color: 'var(--text-muted)' }}>
-              {new Date(pedido.fecha).toLocaleString()}
-            </p>
-            <div style={{ marginTop: '10px', fontSize: '13px' }}>
-                {/* Aquí podrías listar los productos del pedido si quieres */}
-                Usuario: {pedido.usuario}
-            </div>
+    <span style={{ fontWeight: '900', minWidth: '50px', textAlign: 'right' }}>
+      {(product?.price * qty).toFixed(2)}€
+    </span>
+  </div>
+  <div style={{ display: 'flex', alignItems: 'center', gap: '10px', justifyContent: 'center' }}>
+    <button onClick={() => changeQty(id, -1)} className="btn-qty">-</button>
+    <span style={{ fontWeight: 'bold', minWidth: '30px', textAlign: 'center' }}>{qty}</span>
+    <button onClick={() => changeQty(id, 1)} className="btn-qty">+</button>
+  </div>
+</div>
+            );
+          })}
+          
+                  <div style={{ marginTop: '30px', textAlign: 'center' }}>
+          <div style={{ fontSize: '20px', marginBottom: '20px' }}>
+            Total: <span style={{ color: '#ff5c1a', fontWeight: '900' }}>{orderTotal.toFixed(2)}€</span>
           </div>
-        ))
+          <button 
+            className="btn-primary" 
+            style={{ padding: '15px 40px' }}
+            onClick={() => setCurrentView('checkout')}
+          >
+            Ir a Pagar
+          </button>
+        </div>
+        </div>
       ) : (
-        <p>No has realizado ningún pedido todavía.</p>
+        <div style={{ textAlign: 'center', padding: '60px' }}>
+          <p style={{ fontSize: '50px' }}>🛒</p>
+          <h3>Tu carrito está vacío</h3>
+          <button className="btn-secondary" onClick={() => setCurrentView('menu')}>Ir al menú</button>
+        </div>
       )}
     </div>
   </section>
 )}
-          </main>
 
-            {currentView !== 'checkout' && currentView !== 'staff' && currentView !== 'admin' && (
+        {/*VISTA DE HISTORIAL ACTUALIZADA */}
+      {currentView === 'history' && (
+      <section className="view active">
+        <div className="content-header">
+          <h2 className="content-title">Historial de Pedidos</h2>
+        </div>
+
+        {/* BOTONES DE FILTRO */}
+        <div style={{ padding: '20px', display: 'flex', gap: '10px', justifyContent: 'center', marginBottom: '10px' }}>
+          <button
+            onClick={() => setHistorialFilter('todos')}
+            style={{
+              padding: '10px 20px',
+              background: !historialFilter || historialFilter === 'todos' ? '#10B981' : '#f0f0f0',
+              color: !historialFilter || historialFilter === 'todos' ? 'white' : '#333',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+            }}
+          >
+            Todos
+          </button>
+          <button
+            onClick={() => setHistorialFilter('pendientes')}
+            style={{
+              padding: '10px 20px',
+              background: historialFilter === 'pendientes' ? '#ff9800' : '#f0f0f0',
+              color: historialFilter === 'pendientes' ? 'white' : '#333',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+            }}
+          >
+            ⏳ Pendientes
+          </button>
+          <button
+            onClick={() => setHistorialFilter('completados')}
+            style={{
+              padding: '10px 20px',
+              background: historialFilter === 'completados' ? '#2ecc71' : '#f0f0f0',
+              color: historialFilter === 'completados' ? 'white' : '#333',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontWeight: 'bold',
+            }}
+          >
+            ✅ Completados
+          </button>
+        </div>
+
+        <div className="pedidos-list" style={{ padding: '20px' }}>
+          {pedidos.filter(p => p.usuario === user.email).length > 0 ? (
+            pedidos
+              .filter(p => p.usuario === user.email)
+              .filter(p => {
+                if (!historialFilter || historialFilter === 'todos') return true;
+                if (historialFilter === 'pendientes') return p.estado === 'pendiente';
+                if (historialFilter === 'completados') return p.estado === 'completado';
+                return true;
+              })
+              .sort((a, b) => new Date(b.fecha) - new Date(a.fecha))
+              .map((pedido) => (
+          <div key={pedido.id} className="payment-card" style={{ 
+            marginBottom: '15px', 
+            display: 'block',
+            borderLeft: `6px solid ${
+              pedido.estado === 'completado' ? '#2ecc71' : 
+              pedido.estado === 'cancelado' ? '#e74c3c' : '#10B981'
+            }` 
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontWeight: 'bold', alignItems: 'center' }}>
+              <span>Pedido #{pedido.codigo || String(pedido.id).slice(-5)}</span>
+              <span style={{ 
+                fontSize: '11px', 
+                padding: '4px 8px', 
+                borderRadius: '12px',
+                textTransform: 'uppercase',
+                background: pedido.estado === 'completado' ? '#e8f5e9' : 
+                            pedido.estado === 'cancelado' ? '#fdecea' : '#fff3e0',
+                color: pedido.estado === 'completado' ? '#2e7d32' : 
+                       pedido.estado === 'cancelado' ? '#c62828' : '#e65100',
+              }}>
+                {pedido.estado || 'en preparación'}
+              </span>
+            </div>
+            <div style={{ marginTop: '8px', padding: '10px', background: '#fff3e0', borderRadius: '8px', textAlign: 'center', fontWeight: 'bold', color: '#10B981' }}>
+                Código de pedido: <span style={{ fontSize: '16px' }}>{pedido.codigo}</span>
+              </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '10px' }}>
+              <p style={{ fontSize: '12px', color: 'var(--text-muted)', margin: 0 }}>
+                {new Date(pedido.fecha).toLocaleString()}
+              </p>
+              <span style={{ color: 'var(--orange)', fontWeight: '900' }}>{pedido.total?.toFixed(2)}€</span>
+            </div>
+
+            {/*DETALLE DE PRODUCTOS */}
+            <div style={{ marginTop: '10px', fontSize: '13px', color: '#555', background: '#f9f9f9', padding: '8px', borderRadius: '8px' }}>
+              <span style={{ display: 'block', marginBottom: '4px', fontWeight: 'bold' }}>Productos:</span>
+              {Object.entries(pedido.items || {}).map(([id, qty]) => {
+                const prod = products.find(p => String(p.id) === String(id));
+                return <span key={id} style={{ fontSize: '12px', marginRight: '10px' }}>• {qty}x {prod?.name || 'Producto'}</span>;
+              })}
+            </div>
+          </div>
+        ))
+      ) : (
+        <div style={{ textAlign: 'center', padding: '40px' }}>
+          <p style={{ fontSize: '40px' }}>🛒</p>
+          <p>No has realizado ningún pedido todavía.</p>
+        </div>
+      )}
+    </div>
+  </section>
+)}
+
+{currentView === 'confirmation' && lastOrder && (
+  <section className="view active" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh', padding: '20px' }}>
+    <div style={{ textAlign: 'center', maxWidth: '900px', width: '100%', background: 'white', padding: '40px', borderRadius: '20px', boxShadow: '0 10px 40px rgba(0,0,0,0.1)' }}>
+      <div style={{ fontSize: '60px', marginBottom: '20px' }}>✅</div>
+      <h1 style={{ fontSize: '32px', fontWeight: '900', marginBottom: '10px', color: '#333' }}>¡Pedido Enviado!</h1>
+      <p style={{ fontSize: '16px', color: '#999', marginBottom: '40px' }}>Tu pedido ha sido registrado correctamente</p>
+
+      {/* LAYOUT HORIZONTAL: Código a la izquierda, datos a la derecha */}
+      <div className="confirmation-grid">
+        
+        {/* CÓDIGO */}
+        <div style={{ background: '#f9f9f9', padding: '30px', borderRadius: '15px', border: '2px solid #10B981' }}>
+          <p style={{ fontSize: '12px', color: '#999', marginBottom: '10px', textTransform: 'uppercase', fontWeight: 'bold' }}>Tu código de pedido</p>
+          <div style={{ fontSize: '48px', fontWeight: '900', color: '#10B981', letterSpacing: '8px', marginBottom: '20px', fontFamily: 'monospace' }}>
+            {lastOrder.codigo}
+          </div>
+          <p style={{ fontSize: '14px', color: '#666', marginBottom: '0' }}>Usa este código para recoger tu pedido</p>
+        </div>
+
+        {/* DATOS */}
+        <div style={{ textAlign: 'left' }}>
+          <p style={{ fontWeight: 'bold', marginBottom: '8px', color: '#333', fontSize: '14px' }}>📍 Franja horaria</p>
+          <p style={{ fontSize: '18px', fontWeight: 'bold', color: '#10B981', marginBottom: '20px' }}>
+            {franjas.find(f => f.id === lastOrder.franja_horaria) 
+              ? `${franjas.find(f => f.id === lastOrder.franja_horaria).hora_inicio.slice(0, 5)} - ${franjas.find(f => f.id === lastOrder.franja_horaria).hora_fin.slice(0, 5)}` 
+              : 'N/A'}
+          </p>
+
+          <p style={{ fontWeight: 'bold', marginBottom: '8px', color: '#333', fontSize: '14px' }}>🛒 Productos</p>
+          <div style={{ marginBottom: '20px' }}>
+            {Object.entries(lastOrder.items).map(([id, qty]) => {
+              const prod = products.find(p => String(p.id) === String(id));
+              return (
+                <p key={id} style={{ fontSize: '14px', color: '#666', marginBottom: '5px' }}>
+                  • <strong>{qty}x</strong> {prod?.name || 'Producto'}
+                </p>
+              );
+            })}
+          </div>
+
+          <div style={{ borderTop: '1px solid #ddd', paddingTop: '15px' }}>
+            <p style={{ fontSize: '16px', fontWeight: 'bold', color: '#333', marginBottom: '0' }}>
+              Total: <span style={{ color: '#10B981' }}>{parseFloat(lastOrder.total).toFixed(2)}€</span>
+            </p>
+          </div>
+        </div>
+      </div>
+
+      <button
+        onClick={() => {
+          setCurrentView('menu');
+          setLastOrder(null);
+        }}
+        style={{
+          width: '100%',
+          padding: '16px',
+          background: '#10B981',
+          color: 'white',
+          border: 'none',
+          borderRadius: '12px',
+          cursor: 'pointer',
+          fontWeight: 'bold',
+          fontSize: '16px',
+        }}
+      >
+        Volver al menú
+      </button>
+    </div>
+  </section>
+)}
+
+            </main>
+            {currentView !== 'checkout' && 
+            currentView !== 'admin' && 
+            currentView !== 'cart' &&
+            currentView !== 'confirmation' && ( 
               <OrderPanel 
-                orderItems={orderItems} 
-                PRODUCTS={products} 
-                orderTotal={orderTotal}
-                orderCount={orderCount}
-                setCurrentView={setCurrentView}
-                setOrderItems={setOrderItems}
-                changeQty={changeQty}
+              orderItems={orderItems} 
+              PRODUCTS={products} 
+              orderTotal={orderTotal}
+              orderCount={orderCount}
+              setCurrentView={setCurrentView}
+              setOrderItems={setOrderItems}
+              changeQty={changeQty}
+              esAdmin={user?.email === 'davidgonzaga140@gmail.com'} 
               />
             )}
           </div>
         </>
       )}
     </div>
+    </GoogleOAuthProvider>
   );
 }

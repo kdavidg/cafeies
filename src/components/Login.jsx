@@ -81,12 +81,11 @@ function LoginForm({ onLogin, onGoogleLogin }) {
       )}
 
       <button className="btn-google" onClick={onGoogleLogin}>
-  {/* SVG LOGO DE GOOGLE */}
   <svg 
     width="20" 
     height="20" 
     viewBox="0 0 24 24" 
-    style={{ marginRight: '12px' }} // Espacio entre el logo y el texto
+    style={{ marginRight: '12px' }}
   >
     <path
       fill="#4285F4"

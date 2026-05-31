@@ -1,5 +1,7 @@
 import React from 'react';
 
+const ADMIN_EMAIL = 'davidgonzaga140@gmail.com';
+
 function SideBar({
   currentView,
   setCurrentView,
@@ -7,36 +9,71 @@ function SideBar({
   orderCount,
   user,
   handleLogout,
+  sidebarOpen,
+  setSidebarOpen,
 }) {
+  const esAdmin = user?.email === ADMIN_EMAIL;
+
   return (
-    <nav className="app-sidebar">
+    <nav className={`app-sidebar ${sidebarOpen ? 'open' : ''}`}>
       <span className="sidebar-section-label">Usuario</span>
 
-      {[
-        { id: 'menu', icon: '🏠', label: 'Menú del día' },
-        { id: 'favs', icon: '⭐', label: 'Mis favoritos', badge: favoritesCount || null },
-        { id: 'cart', icon: '🛒', label: 'Tu pedido', badge: orderCount || null },
-        { id: 'history', icon: '📋', label: 'Historial' },
-      ].map(item => (
-        <button
-          key={item.id}
-          className={`nav-link ${currentView === item.id ? 'active' : ''}`}
-          onClick={() => setCurrentView(item.id)}
-        >
-          <span className="nav-link-icon">{item.icon}</span>
-          <span className="nav-link-text">{item.label}</span>
-          {item.badge && <span className="nav-link-badge">{item.badge}</span>}
-        </button>
-      ))}
+      {/* MENÚ - aparece para todos */}
+      <button
+        className={`nav-link ${currentView === 'menu' ? 'active' : ''}`}
+        onClick={() => setCurrentView('menu')}
+      >
+        <span className="nav-link-icon">🏠</span>
+        <span className="nav-link-text">Menú del día</span>
+      </button>
+
+      {/* Opciones del CLIENTE - solo si NO es admin */}
+      {!esAdmin && (
+        <>
+          <button
+            className={`nav-link ${currentView === 'favs' ? 'active' : ''}`}
+            onClick={() => setCurrentView('favs')}
+          >
+            <span className="nav-link-icon">⭐</span>
+            <span className="nav-link-text">Mis favoritos</span>
+            {favoritesCount && <span className="nav-link-badge">{favoritesCount}</span>}
+          </button>
+
+          <button
+            className={`nav-link ${currentView === 'cart' ? 'active' : ''}`}
+            onClick={() => setCurrentView('cart')}
+          >
+            <span className="nav-link-icon">🛒</span>
+            <span className="nav-link-text">Tu pedido</span>
+            {orderCount && <span className="nav-link-badge">{orderCount}</span>}
+          </button>
+
+          <button
+            className={`nav-link ${currentView === 'history' ? 'active' : ''}`}
+            onClick={() => setCurrentView('history')}
+          >
+            <span className="nav-link-icon">📋</span>
+            <span className="nav-link-text">Historial</span>
+          </button>
+        </>
+      )}
+
+      {/* Panel Admin - solo si es admin */}
+      {esAdmin && (
+        <>
+          <span className="sidebar-section-label">Administración</span>
+
+          <button
+            className={`nav-link ${currentView === 'admin' ? 'active' : ''}`}
+            onClick={() => setCurrentView('admin')}
+          >
+            <span className="nav-link-icon">📊</span>
+            <span className="nav-link-text">Panel Admin</span>
+          </button>
+        </>
+      )}
 
       <div className="sidebar-divider" />
-
-      <span className="sidebar-section-label">Personal</span>
-
-      <button className="nav-link" onClick={() => setCurrentView('admin')}>
-        <span className="nav-link-icon">👨‍🍳</span>
-        <span className="nav-link-text">Panel cafetería</span>
-      </button>
 
       <div className="sidebar-footer">
         <div className="sidebar-user">
@@ -74,4 +111,5 @@ function SideBar({
     </nav>
   );
 }
+
 export default SideBar;

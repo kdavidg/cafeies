@@ -1,8 +1,10 @@
 import React from 'react';
 
-function OrderPanel({ orderItems, PRODUCTS, orderTotal, orderCount, setCurrentView, setOrderItems, changeQty, finalizarPedido }) {
+function OrderPanel({ orderItems, PRODUCTS, orderTotal, orderCount, setCurrentView, setOrderItems, changeQty, finalizarPedido, esAdmin }) {
   
   const handleClear = () => setOrderItems({});
+
+  if (esAdmin) return null;
 
   return (
     <div className="order-panel">
@@ -18,7 +20,7 @@ function OrderPanel({ orderItems, PRODUCTS, orderTotal, orderCount, setCurrentVi
       {/* LISTA DE PRODUCTOS CON SCROLL */}
       <div className="order-items-list" style={{ flex: 1, overflowY: 'auto', padding: '20px' }}>
         {Object.entries(orderItems).map(([id, qty]) => {
-          const product = PRODUCTS.find(p => p.id === id);
+          const product = PRODUCTS.find(p => String(p.id) === String(id));
           return (
             <div key={id} className="order-item" style={{ 
               display: 'flex', 
@@ -26,13 +28,11 @@ function OrderPanel({ orderItems, PRODUCTS, orderTotal, orderCount, setCurrentVi
               alignItems: 'center', 
               marginBottom: '20px' 
             }}>
-              {/* Info del nombre y precio total del producto */}
               <div style={{ display: 'flex', flexDirection: 'column' }}>
                 <span style={{ fontWeight: '600', fontSize: '14px', marginBottom: '4px' }}>{product?.name}</span>
                 <span style={{ fontWeight: 'bold', color: 'var(--orange)' }}>{(product?.price * qty).toFixed(2)}€</span>
               </div>
 
-              {/* CONTROLES +/- (ESTILO IMAGEN) */}
               <div style={{ 
                 display: 'flex', 
                 alignItems: 'center', 
@@ -62,8 +62,6 @@ function OrderPanel({ orderItems, PRODUCTS, orderTotal, orderCount, setCurrentVi
         })}
       </div>
 
-      
-      
       {/* PIE DEL PANEL (FIJO ABAJO) */}
       <div className="order-panel-footer" style={{ padding: '20px', borderTop: '1px solid var(--border)', background: 'white' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '15px', fontSize: '18px', fontWeight: '800' }}>
@@ -72,13 +70,13 @@ function OrderPanel({ orderItems, PRODUCTS, orderTotal, orderCount, setCurrentVi
         </div>
         
         <button
-    className="btn-primary"
-    onClick={() => setCurrentView('checkout')}
-    disabled={orderCount === 0}
-    style={{ opacity: orderCount === 0 ? 0.5 : 1, width: '100%' }}
->
-    Pagar y Confirmar ({orderTotal.toFixed(2)}€)
-</button>
+          className="btn-primary"
+          onClick={() => setCurrentView('checkout')}
+          disabled={orderCount === 0}
+          style={{ opacity: orderCount === 0 ? 0.5 : 1, width: '100%' }}
+        >
+          Pagar y Confirmar ({orderTotal.toFixed(2)}€)
+        </button>
       </div>
     </div>
   );
