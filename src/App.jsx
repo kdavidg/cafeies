@@ -72,7 +72,6 @@ useEffect(() => {
     try {
       const response = await fetch('https://backend-production-2b15.up.railway.app/api/franjas-horarias/');
       const data = await response.json();
-      // data es un array de {id, hora_inicio, hora_fin, activa, max_pedidos}
       setFranjas(data);
     } catch (error) {
       console.error("Error cargando franjas:", error);

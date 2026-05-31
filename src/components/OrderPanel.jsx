@@ -4,7 +4,6 @@ function OrderPanel({ orderItems, PRODUCTS, orderTotal, orderCount, setCurrentVi
   
   const handleClear = () => setOrderItems({});
 
-  // Si es admin, no mostrar el panel
   if (esAdmin) return null;
 
   return (
