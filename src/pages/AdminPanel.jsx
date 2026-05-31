@@ -187,7 +187,7 @@ const pedidosCompletadosHoy = pedidos
                             Código: <span style={{ color: '#ff5c1a' }}>{pedido.codigo}</span>
                           </h3>
                           <p style={{ margin: 0, fontSize: '14px', color: '#666' }}>
-                            {pedido.usuario.split('@')[0]} • {pedido.franja_horaria}
+                            {pedido.usuario.split('@')[0]} • {pedido.franja_horaria?.slice(0, 5)}
                           </p>
                         </div>
                         <div style={{ textAlign: 'right' }}>
