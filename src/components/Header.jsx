@@ -51,9 +51,7 @@ export default function Header({
             </button>
           </>
         )}
-        <button className="user-avatar" onClick={() => setCurrentView('profile')} title="Mi cuenta">
-          {user?.avatar || 'U'}
-        </button>
+        
       </div>
     </header>
   );

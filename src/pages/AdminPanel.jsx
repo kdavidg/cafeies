@@ -58,6 +58,18 @@ export default function AdminPanel({ user, products }) {
   const pedidosCompletados = pedidos.filter(p => p.estado === 'completado');
   const mostrar = subTab === 'pendientes' ? pedidosPendientes : pedidosCompletados;
 
+  // Calcular estadísticas
+  const hoy = new Date().toDateString();
+  const totalVendidoHoy = pedidos
+    .filter(p => new Date(p.fecha).toDateString() === hoy)
+    .reduce((sum, p) => sum + parseFloat(p.total), 0);
+
+  const pedidosCompletadosHoy = pedidos
+    .filter(p => p.estado === 'completado' && new Date(p.fecha).toDateString() === hoy)
+    .length;
+
+
+
   return (
     <section className="view active">
       <div className="content-header">
@@ -65,6 +77,19 @@ export default function AdminPanel({ user, products }) {
       </div>
 
       <div style={{ padding: '20px' }}>
+      {/* ESTADÍSTICAS ARRIBA */}
+<div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '30px' }}>
+  <div style={{ background: 'linear-gradient(135deg, #10B981 0%, #059669 100%)', color: 'white', padding: '20px', borderRadius: '12px', textAlign: 'center', boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)' }}>
+    <p style={{ margin: '0 0 10px 0', fontSize: '14px', opacity: 0.95, fontWeight: '600' }}>Total Vendido Hoy</p>
+    <h2 style={{ margin: 0, fontSize: '32px', fontWeight: 'bold' }}>{totalVendidoHoy.toFixed(2)}€</h2>
+  </div>
+  
+  <div style={{ background: 'linear-gradient(135deg, #3B82F6 0%, #1D4ED8 100%)', color: 'white', padding: '20px', borderRadius: '12px', textAlign: 'center', boxShadow: '0 4px 12px rgba(59, 130, 246, 0.3)' }}>
+    <p style={{ margin: '0 0 10px 0', fontSize: '14px', opacity: 0.95, fontWeight: '600' }}>Pedidos Completados</p>
+    <h2 style={{ margin: 0, fontSize: '32px', fontWeight: 'bold' }}>{pedidosCompletadosHoy}</h2>
+  </div>
+</div>
+
         {/* TABS PRINCIPALES */}
         <div style={{ display: 'flex', gap: '10px', marginBottom: '30px', minHeight: '44px', alignItems: 'center' }}>
           <button
@@ -120,7 +145,7 @@ export default function AdminPanel({ user, products }) {
                     fontWeight: 'bold',
                   }}
                 >
-                  ⏳ Pendientes ({pedidosPendientes.length})
+                  Pendientes ({pedidosPendientes.length})
                 </button>
                 <button
                   onClick={() => setSubTab('completados')}
@@ -134,7 +159,7 @@ export default function AdminPanel({ user, products }) {
                     fontWeight: 'bold',
                   }}
                 >
-                  ✅ Completados ({pedidosCompletados.length})
+                  Completados ({pedidosCompletados.length})
                 </button>
               </div>
 
