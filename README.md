@@ -1,5 +1,5 @@
 # PRÁCTICA RA7 CAFETERIA (FRONT-END)
-Hecho por Mario Sánchez y Kleiner David Gonzaga
+Hecho por Mario Sánchez y Kleiner David Gonzaga 1º DAWINT
 
 ## Características
 
