@@ -59,14 +59,17 @@ export default function AdminPanel({ user, products }) {
   const mostrar = subTab === 'pendientes' ? pedidosPendientes : pedidosCompletados;
 
   // Calcular estadísticas
-  const hoy = new Date().toDateString();
-  const totalVendidoHoy = pedidos
-    .filter(p => new Date(p.fecha).toDateString() === hoy)
-    .reduce((sum, p) => sum + parseFloat(p.total), 0);
+  // Calcular estadísticas
+const hoy = new Date().toDateString();
 
-  const pedidosCompletadosHoy = pedidos
-    .filter(p => p.estado === 'completado' && new Date(p.fecha).toDateString() === hoy)
-    .length;
+// SOLO VENDIDO COMPLETADO (no pendiente)
+const totalVendidoHoy = pedidos
+  .filter(p => p.estado === 'completado' && new Date(p.fecha).toDateString() === hoy)
+  .reduce((sum, p) => sum + parseFloat(p.total), 0);
+
+const pedidosCompletadosHoy = pedidos
+  .filter(p => p.estado === 'completado' && new Date(p.fecha).toDateString() === hoy)
+  .length;
 
 
 
