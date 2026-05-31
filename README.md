@@ -1,6 +1,6 @@
 # Proyecto Cafetería RA9
 # CaféIES
-Hecho por Mario Sánchez y Kleiner David Gonzaga 1º DAWINT
+Hecho por Mario Alberto Sánchez y Kleiner David Gonzaga 1º DAWINT
 
 ## Modelos
 
